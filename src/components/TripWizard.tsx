@@ -1,6 +1,7 @@
 "use client"
 
 import * as React from "react"
+import { useSearchParams } from "next/navigation"
 import { format, addMonths, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, isToday, isBefore, startOfToday } from "date-fns"
 import { ChevronLeft, ChevronRight, Check, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/Button"
@@ -9,6 +10,9 @@ import { cn } from "@/lib/utils"
 type Step = 1 | 2 | 3
 
 export function TripWizard() {
+    const searchParams = useSearchParams()
+    const initialPackage = searchParams.get('package') || 'luxury'
+
     const [step, setStep] = React.useState<Step>(1)
     const [isSubmitting, setIsSubmitting] = React.useState(false)
     const [isSuccess, setIsSuccess] = React.useState(false)
@@ -28,7 +32,7 @@ export function TripWizard() {
         email: string
         phone: string
     }>({
-        packageType: "luxury",
+        packageType: initialPackage,
         travelers: 2,
         tripLength: 10,
         makkahDays: 5,

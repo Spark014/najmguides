@@ -52,8 +52,11 @@ export default function PackagesPage() {
                                 <p className="text-2xl font-bold text-white">From $X,XXX <span className="text-sm font-normal text-gray-500">per person</span></p>
                                 <p className="text-[10px] text-gray-500 mt-1">Final price confirmed after flight ticketing.</p>
                             </div>
-                            <Link href="/plan-a-trip">
+                            <Link href="/plan-a-trip?package=budget">
                                 <Button variant="outline" className="w-full rounded-full border-white/10 hover:bg-white hover:text-black transition-all">Select Budget</Button>
+                            </Link>
+                            <Link href="/contact" className="block mt-3 text-center text-sm text-gray-400 hover:text-white transition-colors">
+                                Contact for details →
                             </Link>
                         </div>
                     </div>
@@ -96,8 +99,11 @@ export default function PackagesPage() {
                                 <p className="text-2xl font-bold text-white">From $X,XXX <span className="text-sm font-normal text-gray-500">per person</span></p>
                                 <p className="text-[10px] text-gray-500 mt-1">Final price confirmed after flight ticketing.</p>
                             </div>
-                            <Link href="/plan-a-trip">
+                            <Link href="/plan-a-trip?package=comfort">
                                 <Button className="w-full rounded-full bg-primary/10 text-primary hover:bg-primary hover:text-black border border-primary/20 transition-all">Select Comfort</Button>
+                            </Link>
+                            <Link href="/contact" className="block mt-3 text-center text-sm text-gray-400 hover:text-primary transition-colors">
+                                Contact for details →
                             </Link>
                         </div>
                     </div>
@@ -141,8 +147,11 @@ export default function PackagesPage() {
                                 <p className="text-2xl font-bold text-white">From $X,XXX <span className="text-sm font-normal text-gray-500">per person</span></p>
                                 <p className="text-[10px] text-gray-500 mt-1">Final price confirmed after flight ticketing.</p>
                             </div>
-                            <Link href="/plan-a-trip">
+                            <Link href="/plan-a-trip?package=luxury">
                                 <Button className="w-full rounded-full shadow-[0_0_20px_rgba(212,175,55,0.3)] hover:shadow-[0_0_30px_rgba(212,175,55,0.5)] transition-all">Select Luxury</Button>
+                            </Link>
+                            <Link href="/contact" className="block mt-3 text-center text-sm text-primary/70 hover:text-primary transition-colors">
+                                Contact for details →
                             </Link>
                         </div>
                     </div>
