@@ -1,0 +1,73 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model PlannedTrip {
+  id             String        @id @default(cuid())
+  title          String
+  startDate      DateTime
+  endDate        DateTime
+  packageType    String        // "Budget" or "Luxury"
+  makkahNights   Int
+  madinahNights  Int
+  hotelTier      String        // "Economy", "4-star", "5-star"
+  totalSlots     Int
+  availableSlots Int
+  description    String?
+  imageUrl       String?       // URL for the trip image
+  priceDisplay   String?       // Optional display price
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  joinRequests   JoinRequest[]
+}
+
+model TripRequest {
+  id              String   @id @default(cuid())
+  status          String   @default("New") // New, Contacted, Confirmed, Rejected
+  packageType     String
+  travelers       Int
+  tripLength      Int
+  makkahDays      Int
+  madinahDays     Int
+  departureCountry String
+  departureCity   String
+  notes           String?
+  fullName        String
+  email           String
+  phone           String
+  startDateRange  DateTime? // Approximate start date
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model JoinRequest {
+  id        String      @id @default(cuid())
+  tripId    String
+  trip      PlannedTrip @relation(fields: [tripId], references: [id])
+  status    String      @default("New") // New, Contacted, Confirmed, Rejected
+  fullName  String
+  email     String
+  phone     String
+  seats     Int
+  notes     String?
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+}
+
+model BlockedDate {
+  id        String   @id @default(cuid())
+  date      DateTime @unique
+  reason    String?
+  createdAt DateTime @default(now())
+}
+
+model Statistics {
+  id                  String   @id @default("global")
+  totalCompletedTrips Int      @default(0)
+  updatedAt           DateTime @updatedAt
+}
