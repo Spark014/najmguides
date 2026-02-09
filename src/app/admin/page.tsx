@@ -1,4 +1,4 @@
-import { createClient } from "@/utils/supabase/server"
+import { createAdminClient } from "@/utils/supabase/admin"
 import { PlannedTrip, TripRequest, JoinRequest, Statistics } from "@prisma/client"
 import { AdminDashboard } from "@/components/AdminDashboard"
 import { redirect } from "next/navigation"
@@ -18,7 +18,7 @@ export default async function AdminPage() {
     let dbError = null
 
     try {
-        const supabase = createClient(cookieStore)
+        const supabase = createAdminClient()
 
         const [tripsRes, tripReqRes, joinReqRes, statsRes] = await Promise.all([
             supabase.from('PlannedTrip').select('*').order('startDate', { ascending: false }),

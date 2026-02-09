@@ -14,9 +14,9 @@ export default function DiagnosisPage() {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    fullName: "Test User",
-                    email: "test@example.com",
-                    phone: "1234567890",
+                    fullName: "Diagnostic User",
+                    email: "diagnostic@example.com",
+                    phone: "0000000000",
                     packageType: "luxury",
                     travelers: 1,
                     tripLength: 10,
