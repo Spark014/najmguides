@@ -1,3 +1,4 @@
+import { Suspense } from "react"
 import { TripWizard } from "@/components/TripWizard"
 
 export default function PlanATripPage() {
@@ -10,7 +11,9 @@ export default function PlanATripPage() {
                 </p>
             </div>
 
-            <TripWizard />
+            <Suspense fallback={<div className="text-center text-gray-400">Loading...</div>}>
+                <TripWizard />
+            </Suspense>
         </div>
     )
 }
