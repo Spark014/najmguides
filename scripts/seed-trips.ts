@@ -18,7 +18,7 @@ async function main() {
             availableSlots: 15,
             description: 'Experience the spiritual beginning of Ramadan in the holy cities with premium guidance.',
             priceDisplay: '$3,500',
-            imageUrl: 'https://images.unsplash.com/photo-1565552629477-0df601505f3b?q=80&w=1000&auto=format&fit=crop'
+            imageUrl: 'https://images.unsplash.com/photo-1580418827493-f2b22c0a76cb?q=80&w=1000&auto=format&fit=crop'
         },
         {
             title: 'Spring Umrah Retreat',
@@ -46,7 +46,7 @@ async function main() {
             availableSlots: 35,
             description: 'An affordable group trip designed for students and young professionals.',
             priceDisplay: '$1,500',
-            imageUrl: 'https://images.unsplash.com/photo-1537181534458-69c6f937743e?q=80&w=1000&auto=format&fit=crop'
+            imageUrl: 'https://images.unsplash.com/photo-1519817650390-64a93db51149?q=80&w=1000&auto=format&fit=crop'
         }
     ]
 
