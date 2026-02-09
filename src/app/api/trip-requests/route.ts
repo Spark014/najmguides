@@ -18,19 +18,22 @@ export async function POST(request: Request) {
         const { data, error } = await supabase
             .from('TripRequest')
             .insert({
+                id: crypto.randomUUID(),
+                status: 'Pending',
                 fullName: body.fullName,
                 email: body.email,
-                phone: body.phone,
-                packageType: body.packageType,
-                travelers: body.travelers,
-                tripLength: body.tripLength,
-                makkahDays: body.makkahDays,
-                madinahDays: body.madinahDays,
-                departureCountry: body.departureCountry,
-                departureCity: body.departureCity,
-                notes: body.notes,
+                phone: body.phone || '',
+                packageType: body.packageType || 'luxury',
+                travelers: body.travelers || 1,
+                tripLength: body.tripLength || 10,
+                makkahDays: body.makkahDays || 5,
+                madinahDays: body.madinahDays || 5,
+                departureCountry: body.departureCountry || '',
+                departureCity: body.departureCity || '',
+                notes: body.notes || null,
                 startDateRange: body.startDate ? new Date(body.startDate).toISOString() : null,
-                updatedAt: new Date().toISOString() // Manually set updatedAt as Supabase doesn't auto-set it on insert like Prisma sometimes does depending on DB triggers
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString()
             })
             .select()
             .single()
