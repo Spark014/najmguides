@@ -12,6 +12,18 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
         }
 
+        // Env var validation
+        const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+        const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY
+
+        if (!supabaseUrl || !supabaseKey) {
+            console.error('Missing Supabase environment variables')
+            return NextResponse.json({
+                error: 'Server Configuration Error',
+                details: 'Missing Supabase environment variables. Please check Vercel settings.'
+            }, { status: 500 })
+        }
+
         const cookieStore = await cookies()
         const supabase = createClient(cookieStore)
 
