@@ -1,27 +1,36 @@
 import { NextResponse } from "next/server"
-import { prisma } from "@/lib/prisma"
+import { createClient } from "@/utils/supabase/server"
+import { cookies } from "next/headers"
 
 export const dynamic = 'force-dynamic'
 
 export async function POST(req: Request) {
     try {
+        const cookieStore = await cookies()
+        const supabase = createClient(cookieStore)
         const { id, status } = await req.json()
 
         // Try updating TripRequest first
-        const updatedTrip = await prisma.tripRequest.update({
-            where: { id },
-            data: { status }
-        }).catch(() => null)
+        const { data: updatedTrip, error: tripError } = await supabase
+            .from('TripRequest')
+            .update({ status, updatedAt: new Date().toISOString() })
+            .eq('id', id)
+            .select()
+            .single()
 
-        if (updatedTrip) {
+        if (updatedTrip && !tripError) {
             return NextResponse.json(updatedTrip)
         }
 
         // If not found, try JoinRequest
-        const updatedJoin = await prisma.joinRequest.update({
-            where: { id },
-            data: { status }
-        })
+        const { data: updatedJoin, error: joinError } = await supabase
+            .from('JoinRequest')
+            .update({ status, updatedAt: new Date().toISOString() })
+            .eq('id', id)
+            .select()
+            .single()
+
+        if (joinError) throw joinError
 
         return NextResponse.json(updatedJoin)
     } catch (error) {
