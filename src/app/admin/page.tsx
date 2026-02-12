@@ -57,8 +57,9 @@ export default async function AdminPage() {
             ...statsRes.data,
             updatedAt: new Date(statsRes.data.updatedAt)
         } as Statistics : null
-    } catch (error) {
+    } catch (error: any) {
         console.error("Database connection failed:", error)
+        console.error("Error details:", JSON.stringify(error, null, 2))
         dbError = "Failed to connect to the database. Please check your connection string."
     }
 
