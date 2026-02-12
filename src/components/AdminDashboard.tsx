@@ -16,11 +16,36 @@ import {
     Plus,
     X,
     Menu,
-    LogOut
+    LogOut,
+    Briefcase,
+    Loader2
 } from "lucide-react"
-import { motion } from "framer-motion"
-import Image from "next/image"
+import { motion, AnimatePresence } from "framer-motion"
+import NextImage from "next/image"
 
+// Toast Component
+const Toast = ({ message, type, onClose }: { message: string, type: 'success' | 'error', onClose: () => void }) => (
+    <motion.div
+        initial={{ opacity: 0, y: 50, scale: 0.9 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        exit={{ opacity: 0, scale: 0.9, transition: { duration: 0.2 } }}
+        className={`fixed bottom-8 right-8 z-50 flex items-center gap-4 px-6 py-4 rounded-2xl shadow-2xl backdrop-blur-xl border border-white/10 ${type === 'success' ? 'bg-green-500/10 text-green-400' : 'bg-red-500/10 text-red-400'
+            }`}
+    >
+        <div className={`p-2 rounded-full ${type === 'success' ? 'bg-green-500/20' : 'bg-red-500/20'}`}>
+            {type === 'success' ? <CheckCircle className="w-5 h-5" /> : <X className="w-5 h-5" />}
+        </div>
+        <div>
+            <h4 className="font-bold text-sm tracking-wide uppercase">{type === 'success' ? 'Success' : 'Error'}</h4>
+            <p className="text-sm font-medium text-white/90">{message}</p>
+        </div>
+        <button onClick={onClose} className="ml-4 p-1 hover:bg-white/10 rounded-full transition-colors">
+            <X className="w-4 h-4 opacity-50" />
+        </button>
+    </motion.div>
+)
+
+// ... (inside AdminDashboard component)
 interface AdminDashboardProps {
     initialTrips: PlannedTrip[]
     initialTripRequests: TripRequest[]
@@ -86,6 +111,15 @@ const RequestCard = ({ req, type, updateRequestStatus }: { req: any, type: 'trip
                         {type === 'trip' ? 'Mark Contacted' : 'Approve'}
                     </Button>
                 )}
+                {req.status === 'Archived' && (
+                    <Button size="sm" variant="outline" className="h-9 rounded-full border-red-500/20 text-red-500 hover:bg-red-500 hover:text-white transition-all px-4 text-xs" onClick={() => {
+                        if (confirm("Are you sure? This will be permanently deleted after 24 hours.")) {
+                            updateRequestStatus(req.id, 'Deleted', type)
+                        }
+                    }}>
+                        <Trash className="w-3 h-3 mr-2" /> Delete
+                    </Button>
+                )}
                 {req.status !== 'Archived' && req.status !== 'Rejected' && (
                     <Button size="sm" variant="outline" className="h-9 rounded-full border-white/10 hover:bg-red-500/10 hover:text-red-400 hover:border-red-500/50 transition-all px-4 text-xs" onClick={() => updateRequestStatus(req.id, type === 'trip' ? 'Archived' : 'Rejected', type)}>
                         {type === 'trip' ? 'Archive' : 'Reject'}
@@ -108,6 +142,11 @@ const RequestCard = ({ req, type, updateRequestStatus }: { req: any, type: 'trip
                     <div className="space-y-1">
                         <div className="text-sm text-primary font-bold">{req.packageType} Package</div>
                         <div className="text-sm text-gray-300">{req.travelers} Travelers • {req.departureCity}</div>
+                        {req.startDateRange && (
+                            <div className="text-xs text-gray-400 mt-1">
+                                Preferred Start: <span className="text-white font-medium">{format(new Date(req.startDateRange), 'MMMM d, yyyy')}</span>
+                            </div>
+                        )}
                     </div>
                 ) : (
                     <div className="space-y-1">
@@ -126,29 +165,60 @@ const RequestCard = ({ req, type, updateRequestStatus }: { req: any, type: 'trip
     </motion.div>
 )
 
+interface Package {
+    id: string
+    title: string
+    description: string
+    price: string
+    features: string[]
+    notes: string[]
+    isPopular: boolean
+    order: number
+}
+
+// ... existing AdminDashboardProps ...
+
 export function AdminDashboard({ initialTrips, initialTripRequests, initialJoinRequests, initialStats }: AdminDashboardProps) {
-    const [activeTab, setActiveTab] = React.useState<'overview' | 'requests' | 'contacted' | 'archived' | 'joins' | 'trips' | 'availability'>('overview')
+    const [activeTab, setActiveTab] = React.useState<'overview' | 'requests' | 'contacted' | 'archived' | 'joins' | 'trips' | 'availability' | 'packages'>('overview')
     const [isSidebarOpen, setIsSidebarOpen] = React.useState(true)
 
-    // Auto-cleanup on mount
-    React.useEffect(() => {
-        fetch('/api/admin/cleanup', { method: 'POST' }).catch(err => console.error("Auto-cleanup failed:", err))
-    }, [])
+    // ... existing useEffect ...
 
     // State
     const [trips, setTrips] = React.useState(initialTrips)
     const [tripRequests, setTripRequests] = React.useState(initialTripRequests)
     const [joinRequests, setJoinRequests] = React.useState(initialJoinRequests)
+    const [packages, setPackages] = React.useState<Package[]>([])
+
+    // Notification State
+    const [toast, setToast] = React.useState<{ message: string, type: 'success' | 'error' } | null>(null)
+
+    const showToast = (message: string, type: 'success' | 'error' = 'success') => {
+        setToast({ message, type })
+        setTimeout(() => setToast(null), 3000)
+    }
+
+    React.useEffect(() => {
+        if (activeTab === 'packages') {
+            fetch('/api/admin/packages').then(res => res.json()).then(setPackages)
+        }
+    }, [activeTab])
 
     // Filtered Lists
+    // Inbox: Show everything that is NOT Archived, Deleted, or Completed.
+    const inboxTripRequests = tripRequests.filter(r =>
+        r.status !== 'Archived' &&
+        r.status !== 'Deleted' &&
+        r.status !== 'Completed'
+    )
     const newTripRequests = tripRequests.filter(r => r.status === 'New')
     const contactedTripRequests = tripRequests.filter(r => r.status === 'Contacted')
     const archivedTripRequests = tripRequests.filter(r => r.status === 'Archived')
-    const newJoinRequests = joinRequests.filter(r => r.status === 'New')
+    const newJoinRequests = joinRequests.filter(r => r.status !== 'Archived' && r.status !== 'Deleted' && r.status !== 'Completed')
 
     // Stats
     const stats = [
-        { label: "New Requests", value: newTripRequests.length, icon: Inbox, color: "text-blue-400" },
+        { label: "Inbox", value: inboxTripRequests.length, icon: Inbox, color: "text-blue-400" },
         { label: "Join Requests", value: newJoinRequests.length, icon: Users, color: "text-purple-400" },
         { label: "Active Trips", value: trips.length, icon: Plane, color: "text-primary" },
         { label: "Completed Trips", value: (initialStats?.totalCompletedTrips || 0), icon: CheckCircle, color: "text-green-400" },
@@ -170,29 +240,59 @@ export function AdminDashboard({ initialTrips, initialTripRequests, initialJoinR
             setTrips([...trips, await res.json()])
             setIsCreatingTrip(false)
             setNewTrip({ title: "", startDate: "", endDate: "", packageType: "Luxury", makkahNights: 5, madinahNights: 5, hotelTier: "5-star", totalSlots: 20, priceDisplay: "", imageUrl: "" })
+            showToast("Trip created successfully", "success")
+        } else {
+            showToast("Failed to create trip", "error")
         }
     }
 
     const handleDeleteTrip = async (id: string) => {
         if (confirm("Delete this trip?")) {
             const res = await fetch(`/api/admin/trips?id=${id}`, { method: 'DELETE' })
-            if (res.ok) setTrips(trips.filter(t => t.id !== id))
+            if (res.ok) {
+                setTrips(trips.filter(t => t.id !== id))
+                showToast("Trip deleted", "success")
+            } else {
+                showToast("Failed to delete trip", "error")
+            }
         }
     }
 
     const updateRequestStatus = async (id: string, status: string, type: 'trip' | 'join') => {
-        // Optimistic update
-        if (type === 'trip') {
-            setTripRequests(tripRequests.map(r => r.id === id ? { ...r, status } : r))
-        } else {
-            setJoinRequests(joinRequests.map(r => r.id === id ? { ...r, status } : r))
-        }
+        if (status === 'Deleted') {
+            if (!confirm("Permanently delete this request? This cannot be undone.")) return
 
-        await fetch('/api/admin/requests/update', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ id, status })
-        })
+            // Optimistic Remove
+            if (type === 'trip') {
+                setTripRequests(tripRequests.filter(r => r.id !== id))
+            } else {
+                setJoinRequests(joinRequests.filter(r => r.id !== id))
+            }
+
+            const res = await fetch(`/api/admin/requests/delete?id=${id}&type=${type}`, { method: 'DELETE' })
+            if (res.ok) {
+                showToast("Request permanently deleted", "success")
+            } else {
+                showToast("Failed to delete request", "error")
+            }
+        } else {
+            // Optimistic update
+            if (type === 'trip') {
+                setTripRequests(tripRequests.map(r => r.id === id ? { ...r, status } : r))
+            } else {
+                setJoinRequests(joinRequests.map(r => r.id === id ? { ...r, status } : r))
+            }
+
+            const res = await fetch('/api/admin/requests/update', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id, status })
+            })
+
+            if (!res.ok) {
+                showToast("Failed to update status", "error")
+            }
+        }
     }
 
     // Blocked Dates
@@ -212,14 +312,93 @@ export function AdminDashboard({ initialTrips, initialTripRequests, initialJoinR
         if (res.ok) {
             setBlockedDates([...blockedDates, await res.json()])
             setNewBlockedDate("")
+            showToast("Date blocked", "success")
+        } else {
+            showToast("Failed to block date", "error")
         }
     }
 
     const handleUnblockDate = async (id: string) => {
         if (confirm("Unblock?")) {
             const res = await fetch(`/api/admin/availability?id=${id}`, { method: 'DELETE' })
-            if (res.ok) setBlockedDates(blockedDates.filter(d => d.id !== id))
+            if (res.ok) {
+                setBlockedDates(blockedDates.filter(d => d.id !== id))
+                showToast("Date unblocked", "success")
+            } else {
+                showToast("Failed to unblock", "error")
+            }
         }
+    }
+
+    // Package Management State
+    const [isCreatingPackage, setIsCreatingPackage] = React.useState(false)
+    const [editingPackage, setEditingPackage] = React.useState<Package | null>(null)
+    const [packageForm, setPackageForm] = React.useState<Partial<Package>>({
+        title: "", description: "", price: "", features: [], notes: [], isPopular: false
+    })
+
+    const handleCreatePackage = async (e: React.FormEvent) => {
+        e.preventDefault()
+        const res = await fetch('/api/admin/packages', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(packageForm)
+        })
+        if (res.ok) {
+            setPackages([...packages, await res.json()].sort((a, b) => a.order - b.order))
+            setIsCreatingPackage(false)
+            setPackageForm({ title: "", description: "", price: "", features: [], notes: [], isPopular: false })
+            showToast("Package created", "success")
+        } else {
+            showToast("Failed to create package", "error")
+        }
+    }
+
+    const [isPkgSubmitting, setIsPkgSubmitting] = React.useState(false)
+
+    const handleUpdatePackage = async (e: React.FormEvent) => {
+        e.preventDefault()
+        if (!editingPackage || isPkgSubmitting) return
+        setIsPkgSubmitting(true)
+        try {
+            const res = await fetch(`/api/admin/packages/${editingPackage.id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(packageForm)
+            })
+            if (res.ok) {
+                const updated = await res.json()
+                setPackages(packages.map(p => p.id === updated.id ? updated : p))
+                setEditingPackage(null)
+                setPackageForm({ title: "", description: "", price: "", features: [], notes: [], isPopular: false })
+                showToast("Package updated", "success")
+            } else {
+                showToast('Failed to update package.', 'error')
+            }
+        } catch (err) {
+            console.error(err)
+            showToast('An error occurred.', 'error')
+        } finally {
+            setIsPkgSubmitting(false)
+        }
+    }
+
+    const handleDeletePackage = async (id: string) => {
+        if (confirm("Delete this package?")) {
+            const res = await fetch(`/api/admin/packages/${id}`, { method: 'DELETE' })
+            if (res.ok) {
+                setPackages(packages.filter(p => p.id !== id))
+                showToast("Package deleted", "success")
+            } else {
+                showToast("Failed to delete package", "error")
+            }
+        }
+    }
+
+    const startEditPackage = (pkg: Package) => {
+        setEditingPackage(pkg)
+        setPackageForm(pkg)
+        setIsCreatingPackage(false)
     }
 
     return (
@@ -238,13 +417,14 @@ export function AdminDashboard({ initialTrips, initialTripRequests, initialJoinR
                     <SidebarItem id="overview" icon={LayoutDashboard} label="Dashboard" activeTab={activeTab} setActiveTab={setActiveTab} />
 
                     <div className="text-[10px] font-bold text-gray-600 uppercase tracking-widest px-4 mb-3 mt-8">Requests</div>
-                    <SidebarItem id="requests" icon={Inbox} label="Inbox" count={newTripRequests.length} activeTab={activeTab} setActiveTab={setActiveTab} />
+                    <SidebarItem id="requests" icon={Inbox} label="Inbox" count={inboxTripRequests.length} activeTab={activeTab} setActiveTab={setActiveTab} />
                     <SidebarItem id="contacted" icon={CheckCircle} label="Contacted" count={contactedTripRequests.length} activeTab={activeTab} setActiveTab={setActiveTab} />
                     <SidebarItem id="archived" icon={Archive} label="Archived" count={archivedTripRequests.length} activeTab={activeTab} setActiveTab={setActiveTab} />
                     <SidebarItem id="joins" icon={Users} label="Join Requests" count={newJoinRequests.length} activeTab={activeTab} setActiveTab={setActiveTab} />
 
                     <div className="text-[10px] font-bold text-gray-600 uppercase tracking-widest px-4 mb-3 mt-8">Management</div>
                     <SidebarItem id="trips" icon={Plane} label="Planned Trips" activeTab={activeTab} setActiveTab={setActiveTab} />
+                    <SidebarItem id="packages" icon={Briefcase} label="Packages" activeTab={activeTab} setActiveTab={setActiveTab} />
                     <SidebarItem id="availability" icon={CalendarOff} label="Availability" activeTab={activeTab} setActiveTab={setActiveTab} />
                 </div>
 
@@ -269,7 +449,7 @@ export function AdminDashboard({ initialTrips, initialTripRequests, initialJoinR
                         <h2 className="text-2xl font-bold text-white capitalize tracking-tight">{activeTab.replace('-', ' ')}</h2>
                     </div>
                     <div className="flex items-center gap-4">
-                        <Button size="sm" variant="outline" className="rounded-full border-white/10 hover:bg-white hover:text-black transition-all" onClick={() => fetch('/api/admin/cleanup', { method: 'POST' }).then(() => alert('Cleanup complete'))}>
+                        <Button size="sm" variant="outline" className="rounded-full border-white/10 hover:bg-white hover:text-black transition-all" onClick={() => fetch('/api/admin/cleanup', { method: 'POST' }).then(() => showToast('Cleanup complete', 'success'))}>
                             <Trash className="w-4 h-4 mr-2" /> Cleanup
                         </Button>
                     </div>
@@ -300,29 +480,51 @@ export function AdminDashboard({ initialTrips, initialTripRequests, initialJoinR
                                     ))}
                                 </div>
 
-                                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                                    <div className="bg-zinc-900/30 border border-white/5 rounded-[2.5rem] p-8">
-                                        <div className="flex items-center gap-4 mb-6">
-                                            <div className="w-1.5 h-6 bg-primary rounded-full" />
-                                            <h3 className="text-xl font-bold text-white tracking-tight">Recent Activity</h3>
-                                        </div>
-                                        <div className="space-y-3">
-                                            {tripRequests.slice(0, 5).map(req => (
-                                                <div key={req.id} className="flex items-center justify-between p-4 rounded-[1.5rem] bg-white/5 hover:bg-white/10 transition-all cursor-default group border border-white/5">
-                                                    <div className="flex items-center gap-4">
-                                                        <div className="w-10 h-10 rounded-full bg-black flex items-center justify-center text-gray-500 group-hover:text-primary transition-colors border border-white/5">
-                                                            <Inbox className="w-5 h-5" />
+                                <div className="bg-zinc-900/30 border border-white/5 rounded-[2.5rem] p-8">
+                                    <div className="flex items-center gap-4 mb-6">
+                                        <div className="w-1.5 h-6 bg-primary rounded-full" />
+                                        <h3 className="text-xl font-bold text-white tracking-tight">Recent Activity</h3>
+                                    </div>
+                                    <div className="space-y-3">
+                                        {[...tripRequests, ...joinRequests]
+                                            .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+                                            .slice(0, 5)
+                                            .map((req, index) => {
+                                                const isTrip = 'packageType' in req
+                                                const isLatest = index === 0
+                                                // If it's the latest, force the "New" look. Otherwise use status.
+                                                // If status is 'New' but not latest, show as 'Pending' or standard gray.
+                                                const displayStatus = isLatest ? 'New' : (req.status === 'New' ? 'Pending' : req.status)
+
+                                                return (
+                                                    <div key={req.id}
+                                                        onClick={() => setActiveTab(isTrip ? 'requests' : 'joins')}
+                                                        className="flex items-center justify-between p-4 rounded-[1.5rem] bg-white/5 hover:bg-white/10 transition-all cursor-pointer group border border-white/5 shadow-sm hover:shadow-md hover:border-white/10"
+                                                    >
+                                                        <div className="flex items-center gap-4">
+                                                            <div className={`w-10 h-10 rounded-full flex items-center justify-center border border-white/5 transition-colors ${isLatest ? 'bg-blue-500/10 text-blue-400 group-hover:bg-blue-500/20' :
+                                                                req.status === 'Contacted' ? 'bg-green-500/10 text-green-400 group-hover:bg-green-500/20' :
+                                                                    'bg-gray-500/10 text-gray-400 group-hover:bg-gray-500/20'
+                                                                }`}>
+                                                                {isTrip ? <Inbox className="w-5 h-5" /> : <Users className="w-5 h-5" />}
+                                                            </div>
+                                                            <div>
+                                                                <p className="text-sm font-bold text-white leading-tight">{req.fullName}</p>
+                                                                <div className="flex items-center gap-2 mt-0.5">
+                                                                    <span className={`text-[10px] uppercase tracking-wider font-medium ${isLatest ? 'text-blue-400 animate-pulse' :
+                                                                        req.status === 'Contacted' ? 'text-green-400' :
+                                                                            'text-gray-500'
+                                                                        }`}>{displayStatus}</span>
+                                                                    <span className="text-[10px] text-gray-600">•</span>
+                                                                    <span className="text-[10px] text-gray-500 uppercase tracking-wider">{isTrip ? 'Trip Request' : 'Join Request'}</span>
+                                                                </div>
+                                                            </div>
                                                         </div>
-                                                        <div>
-                                                            <p className="text-sm font-bold text-white leading-tight">{req.fullName}</p>
-                                                            <p className="text-[10px] text-gray-500 uppercase tracking-wider mt-0.5">New Request</p>
-                                                        </div>
+                                                        <span className="text-xs text-gray-500 font-medium bg-black px-3 py-1 rounded-full border border-white/5">{format(new Date(req.createdAt), 'MMM d')}</span>
                                                     </div>
-                                                    <span className="text-xs text-gray-500 font-medium bg-black px-3 py-1 rounded-full border border-white/5">{format(new Date(req.createdAt), 'MMM d')}</span>
-                                                </div>
-                                            ))}
-                                            {tripRequests.length === 0 && <p className="text-gray-500 text-center py-4">No recent activity.</p>}
-                                        </div>
+                                                )
+                                            })}
+                                        {(tripRequests.length + joinRequests.length) === 0 && <p className="text-gray-500 text-center py-4">No recent activity.</p>}
                                     </div>
                                 </div>
                             </div>
@@ -331,10 +533,10 @@ export function AdminDashboard({ initialTrips, initialTripRequests, initialJoinR
                         {(activeTab === 'requests' || activeTab === 'contacted' || activeTab === 'archived') && (
                             <div className="space-y-6">
                                 <div className="grid grid-cols-1 gap-4">
-                                    {(activeTab === 'requests' ? newTripRequests : activeTab === 'contacted' ? contactedTripRequests : archivedTripRequests).map(req => (
+                                    {(activeTab === 'requests' ? inboxTripRequests : activeTab === 'contacted' ? contactedTripRequests : archivedTripRequests).map(req => (
                                         <RequestCard key={req.id} req={req} type="trip" updateRequestStatus={updateRequestStatus} />
                                     ))}
-                                    {(activeTab === 'requests' ? newTripRequests : activeTab === 'contacted' ? contactedTripRequests : archivedTripRequests).length === 0 && (
+                                    {(activeTab === 'requests' ? inboxTripRequests : activeTab === 'contacted' ? contactedTripRequests : archivedTripRequests).length === 0 && (
                                         <div className="text-center py-32">
                                             <div className="w-20 h-20 bg-zinc-900 rounded-full flex items-center justify-center mx-auto mb-6 text-gray-600">
                                                 <Inbox className="w-8 h-8" />
@@ -404,7 +606,7 @@ export function AdminDashboard({ initialTrips, initialTripRequests, initialJoinR
                                     {trips.map(trip => (
                                         <div key={trip.id} className="bg-zinc-900/50 border border-white/10 p-6 rounded-[2rem] flex justify-between items-center group hover:border-primary/30 transition-all hover:bg-zinc-900">
                                             <div className="flex items-center gap-4">
-                                                {trip.imageUrl && <Image src={trip.imageUrl} alt={trip.title} width={64} height={64} className="w-16 h-16 rounded-xl object-cover" />}
+                                                {trip.imageUrl && <NextImage src={trip.imageUrl} alt={trip.title} width={64} height={64} className="w-16 h-16 rounded-xl object-cover" />}
                                                 <div>
                                                     <h3 className="font-bold text-white text-lg">{trip.title}</h3>
                                                     <p className="text-sm text-gray-400 mt-1">
@@ -455,9 +657,82 @@ export function AdminDashboard({ initialTrips, initialTripRequests, initialJoinR
                                 </div>
                             </div>
                         )}
+                        {activeTab === 'packages' && (
+                            <div className="space-y-6">
+                                <div className="flex justify-between items-center mb-8">
+                                    <h2 className="text-xl font-bold text-white">Packages</h2>
+                                    {!isCreatingPackage && !editingPackage && (
+                                        <Button onClick={() => { setIsCreatingPackage(true); setEditingPackage(null); setPackageForm({ title: "", description: "", price: "", features: [], notes: [], isPopular: false }) }} className="rounded-full px-6">
+                                            <Plus className="mr-2 h-4 w-4" /> Create New Package
+                                        </Button>
+                                    )}
+                                </div>
+
+                                {(isCreatingPackage || editingPackage) && (
+                                    <motion.form
+                                        initial={{ opacity: 0, height: 0 }}
+                                        animate={{ opacity: 1, height: 'auto' }}
+                                        onSubmit={editingPackage ? handleUpdatePackage : handleCreatePackage}
+                                        className="bg-zinc-900/50 p-8 rounded-[2rem] border border-white/10 space-y-6 mb-8"
+                                    >
+                                        <h3 className="text-lg font-bold text-white mb-4">{editingPackage ? 'Edit Package' : 'New Package'}</h3>
+                                        <div className="grid grid-cols-2 gap-6">
+                                            <input required placeholder="Title" value={packageForm.title} onChange={e => setPackageForm({ ...packageForm, title: e.target.value })} className="bg-black border border-white/10 rounded-xl p-4 text-white focus:border-primary outline-none transition-colors" />
+                                            <input required placeholder="Price Display (e.g. From $1,500)" value={packageForm.price} onChange={e => setPackageForm({ ...packageForm, price: e.target.value })} className="bg-black border border-white/10 rounded-xl p-4 text-white focus:border-primary outline-none transition-colors" />
+                                            <div className="col-span-2">
+                                                <input required placeholder="Description" value={packageForm.description} onChange={e => setPackageForm({ ...packageForm, description: e.target.value })} className="w-full bg-black border border-white/10 rounded-xl p-4 text-white focus:border-primary outline-none transition-colors" />
+                                            </div>
+                                            <div className="col-span-2">
+                                                <label className="text-sm text-gray-400 block mb-2">Features (one per line)</label>
+                                                <textarea required value={Array.isArray(packageForm.features) ? packageForm.features.join('\n') : ''} onChange={e => setPackageForm({ ...packageForm, features: e.target.value.split('\n') })} className="w-full bg-black border border-white/10 rounded-xl p-4 text-white focus:border-primary outline-none transition-colors h-32" />
+                                            </div>
+                                            <div className="col-span-2">
+                                                <label className="text-sm text-gray-400 block mb-2">Notes (one per line)</label>
+                                                <textarea value={Array.isArray(packageForm.notes) ? packageForm.notes.join('\n') : ''} onChange={e => setPackageForm({ ...packageForm, notes: e.target.value.split('\n') })} className="w-full bg-black border border-white/10 rounded-xl p-4 text-white focus:border-primary outline-none transition-colors h-24" />
+                                            </div>
+                                            <label className="flex items-center space-x-2 cursor-pointer">
+                                                <input type="checkbox" checked={packageForm.isPopular} onChange={e => setPackageForm({ ...packageForm, isPopular: e.target.checked })} className="rounded border-gray-600 bg-black text-primary" />
+                                                <span className="text-white">Mark as Popular/Premium</span>
+                                            </label>
+                                        </div>
+                                        <div className="flex gap-4">
+                                            <Button type="submit" className="flex-1 rounded-xl py-4 text-lg">{editingPackage ? 'Update' : 'Create'}</Button>
+                                            <Button type="button" variant="outline" onClick={() => { setIsCreatingPackage(false); setEditingPackage(null) }} className="flex-1 rounded-xl py-4 text-lg">Cancel</Button>
+                                        </div>
+                                    </motion.form>
+                                )}
+
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 justify-center">
+                                    {packages.map(pkg => (
+                                        <div key={pkg.id} className={`bg-zinc-900/50 border ${pkg.isPopular ? 'border-primary/50' : 'border-white/10'} p-6 rounded-[2rem] flex flex-col relative group hover:bg-zinc-900 transition-all`}>
+                                            {pkg.isPopular && <div className="absolute top-4 right-4 bg-primary text-black text-[10px] font-bold px-2 py-1 rounded">POPULAR</div>}
+                                            <h3 className="font-bold text-white text-lg mb-2">{pkg.title}</h3>
+                                            <p className="text-primary font-medium text-sm mb-4">{pkg.price}</p>
+                                            <p className="text-gray-400 text-xs mb-4 line-clamp-3">{pkg.description}</p>
+
+                                            <div className="mt-auto flex gap-2">
+                                                <Button size="sm" variant="outline" onClick={() => startEditPackage(pkg)} className="flex-1 rounded-full border-white/10 text-xs">Edit</Button>
+                                                <Button size="sm" variant="ghost" onClick={() => handleDeletePackage(pkg.id)} className="text-red-500 hover:text-red-400 hover:bg-red-900/20 rounded-full px-2">
+                                                    <Trash className="w-4 h-4" />
+                                                </Button>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
                     </div>
                 </main>
-            </div>
-        </div>
+                <AnimatePresence>
+                    {toast && (
+                        <Toast
+                            message={toast.message}
+                            type={toast.type}
+                            onClose={() => setToast(null)}
+                        />
+                    )}
+                </AnimatePresence>
+            </div >
+        </div >
     )
 }

@@ -28,7 +28,7 @@ model PlannedTrip {
 
 model TripRequest {
   id              String   @id @default(cuid())
-  status          String   @default("New") // New, Contacted, Confirmed, Rejected
+  status          String   @default("New") // New, Contacted, Confirmed, Rejected, Archived, Deleted
   packageType     String
   travelers       Int
   tripLength      Int
@@ -43,13 +43,14 @@ model TripRequest {
   startDateRange  DateTime? // Approximate start date
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
+  deletedAt       DateTime?
 }
 
 model JoinRequest {
   id        String      @id @default(cuid())
   tripId    String
   trip      PlannedTrip @relation(fields: [tripId], references: [id])
-  status    String      @default("New") // New, Contacted, Confirmed, Rejected
+  status    String      @default("New") // New, Contacted, Confirmed, Rejected, Archived, Deleted
   fullName  String
   email     String
   phone     String
@@ -57,6 +58,7 @@ model JoinRequest {
   notes     String?
   createdAt DateTime    @default(now())
   updatedAt DateTime    @updatedAt
+  deletedAt DateTime?
 }
 
 model BlockedDate {
@@ -70,4 +72,17 @@ model Statistics {
   id                  String   @id @default("global")
   totalCompletedTrips Int      @default(0)
   updatedAt           DateTime @updatedAt
+}
+
+model Package {
+  id          String   @id @default(cuid())
+  title       String
+  description String
+  price       String
+  features    String[]
+  notes       String[]
+  isPopular   Boolean  @default(false)
+  order       Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }

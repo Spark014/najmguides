@@ -1,14 +1,16 @@
 
 import { NextResponse } from 'next/server'
-import { createClient } from '@/utils/supabase/server'
-import { cookies } from 'next/headers'
+import { createClient } from "@supabase/supabase-js"
 
 export async function POST(request: Request) {
     try {
         const body = await request.json()
 
-        const cookieStore = await cookies()
-        const supabase = createClient(cookieStore)
+        // Use service role to bypass RLS
+        const supabase = createClient(
+            process.env.NEXT_PUBLIC_SUPABASE_URL!,
+            process.env.SUPABASE_SERVICE_ROLE_KEY!
+        )
 
         const { data, error } = await supabase
             .from('PlannedTrip')
@@ -49,8 +51,11 @@ export async function DELETE(request: Request) {
     }
 
     try {
-        const cookieStore = await cookies()
-        const supabase = createClient(cookieStore)
+        // Use service role to bypass RLS
+        const supabase = createClient(
+            process.env.NEXT_PUBLIC_SUPABASE_URL!,
+            process.env.SUPABASE_SERVICE_ROLE_KEY!
+        )
 
         const { error } = await supabase
             .from('PlannedTrip')

@@ -38,7 +38,16 @@ export async function POST() {
                 throw fetchError
             }
 
-            const currentCount = currentStats?.totalCompletedTrips || 0
+            // Actually, maybeSingle is better
+            const { data: currentStatsData, error: statsError } = await supabase
+                .from('Statistics')
+                .select('totalCompletedTrips')
+                .eq('id', 'global')
+                .maybeSingle()
+
+            if (statsError) throw statsError
+
+            const currentCount = currentStatsData?.totalCompletedTrips || 0
             const newCount = currentCount + totalCompletedToAdd
 
             const { error: upsertError } = await supabase
@@ -52,19 +61,38 @@ export async function POST() {
             if (upsertError) throw upsertError
         }
 
-        // 3. Delete Archived and Completed trips (TripRequests)
+        // 3. Delete 'Completed' trips immediately (Count and Forget)
+        // We do NOT delete 'Archived' anymore here.
+        const { error: deleteCompletedTripError } = await supabase
+            .from('TripRequest')
+            .delete()
+            .eq('status', 'Completed')
+
+        if (deleteCompletedTripError) throw deleteCompletedTripError
+
+        const { error: deleteCompletedJoinError } = await supabase
+            .from('JoinRequest')
+            .delete()
+            .eq('status', 'Completed')
+
+        if (deleteCompletedJoinError) throw deleteCompletedJoinError
+
+        // 4. Delete 'Deleted' items older than 24 hours
+        const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
+
         const { count: deletedTripRequestsCount, error: deleteTripError } = await supabase
             .from('TripRequest')
             .delete({ count: 'exact' })
-            .in('status', ['Archived', 'Completed'])
+            .eq('status', 'Deleted')
+            .lt('deletedAt', twentyFourHoursAgo)
 
         if (deleteTripError) throw deleteTripError
 
-        // 4. Delete Archived and Completed trips (JoinRequests)
         const { count: deletedJoinRequestsCount, error: deleteJoinError } = await supabase
             .from('JoinRequest')
             .delete({ count: 'exact' })
-            .in('status', ['Archived', 'Completed'])
+            .eq('status', 'Deleted')
+            .lt('deletedAt', twentyFourHoursAgo)
 
         if (deleteJoinError) throw deleteJoinError
 

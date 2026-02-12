@@ -1,36 +1,45 @@
 import { NextResponse } from "next/server"
-import { createClient } from "@/utils/supabase/server"
-import { cookies } from "next/headers"
+import { createClient } from "@supabase/supabase-js"
 
 export const dynamic = 'force-dynamic'
 
 export async function POST(req: Request) {
     try {
-        const cookieStore = await cookies()
-        const supabase = createClient(cookieStore)
+        const supabase = createClient(
+            process.env.NEXT_PUBLIC_SUPABASE_URL!,
+            process.env.SUPABASE_SERVICE_ROLE_KEY!
+        )
         const { id, status } = await req.json()
 
-        // Try updating TripRequest first
+        const updateData: any = { status, updatedAt: new Date().toISOString() }
+        if (status === 'Deleted') {
+            updateData.deletedAt = new Date().toISOString()
+        }
+
         const { data: updatedTrip, error: tripError } = await supabase
             .from('TripRequest')
-            .update({ status, updatedAt: new Date().toISOString() })
+            .update(updateData)
             .eq('id', id)
             .select()
-            .single()
+            .maybeSingle() // Use maybeSingle to avoid error if not found
 
-        if (updatedTrip && !tripError) {
+        if (updatedTrip) {
             return NextResponse.json(updatedTrip)
         }
 
-        // If not found, try JoinRequest
+        // If not found in TripRequest, try JoinRequest
         const { data: updatedJoin, error: joinError } = await supabase
             .from('JoinRequest')
-            .update({ status, updatedAt: new Date().toISOString() })
+            .update(updateData)
             .eq('id', id)
             .select()
-            .single()
+            .maybeSingle()
 
         if (joinError) throw joinError
+
+        if (!updatedJoin) {
+            return NextResponse.json({ error: "Request not found" }, { status: 404 })
+        }
 
         return NextResponse.json(updatedJoin)
     } catch (error) {

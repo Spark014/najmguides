@@ -1,13 +1,14 @@
 import { NextResponse } from 'next/server'
-import { createClient } from '@/utils/supabase/server'
-import { cookies } from 'next/headers'
+import { createClient } from "@supabase/supabase-js"
+import { createClient as createServerClient } from '@/utils/supabase/server'
+import { cookies } from "next/headers"
 
 export const dynamic = 'force-dynamic'
 
 export async function GET() {
     try {
         const cookieStore = await cookies()
-        const supabase = createClient(cookieStore)
+        const supabase = createServerClient(cookieStore)
 
         const { data, error } = await supabase
             .from('BlockedDate')
@@ -23,8 +24,11 @@ export async function GET() {
 
 export async function POST(request: Request) {
     try {
-        const cookieStore = await cookies()
-        const supabase = createClient(cookieStore)
+        // Use service role to bypass RLS
+        const supabase = createClient(
+            process.env.NEXT_PUBLIC_SUPABASE_URL!,
+            process.env.SUPABASE_SERVICE_ROLE_KEY!
+        )
         const body = await request.json()
         const { date, reason } = body
 
@@ -46,8 +50,11 @@ export async function POST(request: Request) {
 
 export async function DELETE(request: Request) {
     try {
-        const cookieStore = await cookies()
-        const supabase = createClient(cookieStore)
+        // Use service role to bypass RLS
+        const supabase = createClient(
+            process.env.NEXT_PUBLIC_SUPABASE_URL!,
+            process.env.SUPABASE_SERVICE_ROLE_KEY!
+        )
         const { searchParams } = new URL(request.url)
         const id = searchParams.get('id')
 
