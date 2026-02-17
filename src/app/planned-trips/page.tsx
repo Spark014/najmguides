@@ -10,6 +10,8 @@ export default async function PlannedTripsPage() {
     let trips: PlannedTrip[] = []
     let error = null
 
+    let packageTypes: string[] = []
+
     try {
         const cookieStore = await cookies()
         const supabase = createClient(cookieStore)
@@ -35,6 +37,10 @@ export default async function PlannedTripsPage() {
                 createdAt: new Date(trip.createdAt),
                 updatedAt: new Date(trip.updatedAt)
             })) as PlannedTrip[]
+
+            // Extract unique package types
+            const uniqueTypes = new Set(trips.map(t => t.packageType))
+            packageTypes = Array.from(uniqueTypes)
         }
     } catch (e) {
         console.error("Failed to fetch trips:", e)
@@ -56,7 +62,7 @@ export default async function PlannedTripsPage() {
                         <p className="text-gray-500">{error}</p>
                     </div>
                 ) : (
-                    <PlannedTripsClient initialTrips={trips} />
+                    <PlannedTripsClient initialTrips={trips} availablePackageTypes={packageTypes} />
                 )}
             </div>
         </div>

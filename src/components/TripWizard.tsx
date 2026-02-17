@@ -26,11 +26,7 @@ export function TripWizard({ packages }: TripWizardProps) {
     const initialPackage = searchParams.get('package') || 'luxury'
 
     // Fallback if no packages provided
-    const displayPackages = packages && packages.length > 0 ? packages : [
-        { title: 'Budget Umrah', id: 'budget', description: 'Essential' },
-        { title: 'Comfort Umrah', id: 'comfort', description: 'Balanced' },
-        { title: 'Luxury Umrah', id: 'luxury', description: 'Premium' }
-    ]
+
 
     const [step, setStep] = React.useState<Step>(1)
     const [direction, setDirection] = React.useState(0)
@@ -45,8 +41,8 @@ export function TripWizard({ packages }: TripWizardProps) {
         tripLength: number | string
         makkahDays: number | string
         madinahDays: number | string
-        departureCountry: string
-        departureCity: string
+
+        nationality: string
         notes: string
         fullName: string
         email: string
@@ -57,8 +53,7 @@ export function TripWizard({ packages }: TripWizardProps) {
         tripLength: 10,
         makkahDays: 5,
         madinahDays: 5,
-        departureCountry: "United States",
-        departureCity: "",
+        nationality: "",
         notes: "",
         fullName: "",
         email: "",
@@ -68,6 +63,38 @@ export function TripWizard({ packages }: TripWizardProps) {
     // Calendar State
     const minDate = addMonths(startOfToday(), 3)
     const [currentMonth, setCurrentMonth] = React.useState(minDate)
+    const [blockedDates, setBlockedDates] = React.useState<Date[]>([])
+    const [fetchedPackages, setFetchedPackages] = React.useState<Package[]>([])
+
+    React.useEffect(() => {
+        // Fetch Blocked Dates
+        fetch('/api/admin/availability')
+            .then(res => res.json())
+            .then((data: { date: string }[]) => {
+                setBlockedDates(data.map(d => new Date(d.date)))
+            })
+            .catch(err => console.error("Failed to fetch blocked dates", err))
+
+        // Fetch Packages
+        fetch('/api/packages')
+            .then(res => res.json())
+            .then((data) => {
+                if (Array.isArray(data) && data.length > 0) {
+                    setFetchedPackages(data)
+                }
+            })
+            .catch(err => console.error("Failed to fetch packages", err))
+    }, [])
+
+    // Use fetched packages if available, otherwise fall back to props or hardcoded
+    const finalPackages = fetchedPackages.length > 0 ? fetchedPackages : (packages && packages.length > 0 ? packages : [
+        { title: 'Budget Umrah', id: 'budget', description: 'Essential' },
+        { title: 'Comfort Umrah', id: 'comfort', description: 'Balanced' },
+        { title: 'Luxury Umrah', id: 'luxury', description: 'Premium' }
+    ])
+
+    // Update displayPackages usage
+    const displayPackages = finalPackages
 
     const handleNext = () => {
         if (step < 3) {
@@ -179,8 +206,8 @@ export function TripWizard({ packages }: TripWizardProps) {
                 ))}
             </div>
 
-            <div className="bg-zinc-900/40 backdrop-blur-3xl border border-white/10 rounded-[3rem] overflow-hidden shadow-2xl relative min-h-[600px] flex flex-col">
-                <div className="flex-grow p-8 md:p-12 relative">
+            <div className="bg-zinc-900/40 backdrop-blur-3xl border border-white/10 rounded-[2rem] md:rounded-[3rem] overflow-hidden shadow-2xl relative min-h-[600px] flex flex-col">
+                <div className="flex-grow p-6 md:p-12 relative">
                     <AnimatePresence initial={false} custom={direction} mode="wait">
                         <motion.div
                             key={step}
@@ -199,8 +226,8 @@ export function TripWizard({ packages }: TripWizardProps) {
                             {step === 1 && (
                                 <div className="space-y-8 max-w-2xl mx-auto text-center">
                                     <div>
-                                        <h2 className="text-4xl md:text-5xl font-bold text-white mb-4 tracking-tighter">When are you planning to go?</h2>
-                                        <p className="text-xl text-gray-400">
+                                        <h2 className="text-3xl md:text-5xl font-bold text-white mb-4 tracking-tighter">When are you planning to go?</h2>
+                                        <p className="text-lg md:text-xl text-gray-400">
                                             Select a start date at least 3 months from today ({format(minDate, 'MMMM d, yyyy')}).
                                         </p>
                                     </div>
@@ -217,10 +244,11 @@ export function TripWizard({ packages }: TripWizardProps) {
                                                 <span key={d} className="text-sm font-bold text-gray-500 uppercase tracking-widest">{d}</span>
                                             ))}
                                         </div>
-                                        <div className="grid grid-cols-7 gap-2">
+                                        <div className="grid grid-cols-7 gap-1 md:gap-2">
                                             {days.map((day) => {
                                                 const isSelected = dateRange.start && isSameDay(day, dateRange.start)
-                                                const isDisabled = isBefore(day, minDate)
+                                                const isBlocked = blockedDates.some(d => isSameDay(d, day))
+                                                const isDisabled = isBefore(day, minDate) || isBlocked
 
                                                 return (
                                                     <button
@@ -303,13 +331,13 @@ export function TripWizard({ packages }: TripWizardProps) {
                                             </div>
 
                                             <div className="space-y-6">
-                                                <label className="text-sm text-gray-500 font-bold uppercase tracking-widest ml-1">Departure City</label>
+                                                <label className="text-sm text-gray-500 font-bold uppercase tracking-widest ml-1">Nationality</label>
                                                 <input
                                                     type="text"
-                                                    value={formData.departureCity}
-                                                    onChange={(e) => setFormData({ ...formData, departureCity: e.target.value })}
+                                                    value={formData.nationality}
+                                                    onChange={(e) => setFormData({ ...formData, nationality: e.target.value })}
                                                     className="w-full h-14 bg-white/5 border border-white/10 rounded-2xl px-6 text-lg text-white focus:bg-white/10 focus:border-[#D4AF37]/50 focus:outline-none transition-all placeholder:text-gray-600"
-                                                    placeholder="e.g. London, New York"
+                                                    placeholder="e.g. British, American, Canadian"
                                                 />
                                             </div>
                                         </div>

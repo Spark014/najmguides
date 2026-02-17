@@ -3,7 +3,7 @@
 import * as React from "react"
 import { PlannedTrip, TripRequest, JoinRequest } from "@prisma/client"
 import { Button } from "@/components/ui/Button"
-import { format } from "date-fns"
+import { format, addMonths, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, isAfter, isBefore } from "date-fns"
 import {
     LayoutDashboard,
     Inbox,
@@ -18,10 +18,18 @@ import {
     Menu,
     LogOut,
     Briefcase,
-    Loader2
+    Loader2,
+    ChevronLeft,
+    ChevronRight
 } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
 import NextImage from "next/image"
+
+interface Package {
+    id: string
+    title: string
+    [key: string]: any
+}
 
 // Toast Component
 const Toast = ({ message, type, onClose }: { message: string, type: 'success' | 'error', onClose: () => void }) => (
@@ -224,26 +232,77 @@ export function AdminDashboard({ initialTrips, initialTripRequests, initialJoinR
         { label: "Completed Trips", value: (initialStats?.totalCompletedTrips || 0), icon: CheckCircle, color: "text-green-400" },
     ]
 
-    // New Trip Form State
+    // Trip Management State
     const [isCreatingTrip, setIsCreatingTrip] = React.useState(false)
-    const [newTrip, setNewTrip] = React.useState({
+    const [editingTrip, setEditingTrip] = React.useState<PlannedTrip | null>(null)
+    const [fetchedPackages, setFetchedPackages] = React.useState<Package[]>([])
+    const [tripForm, setTripForm] = React.useState({
         title: "", startDate: "", endDate: "", packageType: "Luxury",
         makkahNights: 5, madinahNights: 5, hotelTier: "5-star",
         totalSlots: 20, priceDisplay: "", imageUrl: ""
     })
 
+    React.useEffect(() => {
+        // Fetch Packages
+        fetch('/api/packages')
+            .then(res => res.json())
+            .then((data) => {
+                if (Array.isArray(data)) {
+                    setFetchedPackages(data)
+                    // Set default package type if available
+                    if (data.length > 0 && !editingTrip) {
+                        setTripForm(prev => ({ ...prev, packageType: data[0].title }))
+                    }
+                }
+            })
+            .catch(err => console.error("Failed to fetch packages", err))
+    }, [])
+
+    // Handlers
     // Handlers
     const handleCreateTrip = async (e: React.FormEvent) => {
         e.preventDefault()
-        const res = await fetch('/api/admin/trips', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(newTrip) })
+        const res = await fetch('/api/admin/trips', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(tripForm) })
         if (res.ok) {
             setTrips([...trips, await res.json()])
             setIsCreatingTrip(false)
-            setNewTrip({ title: "", startDate: "", endDate: "", packageType: "Luxury", makkahNights: 5, madinahNights: 5, hotelTier: "5-star", totalSlots: 20, priceDisplay: "", imageUrl: "" })
+            setTripForm({ title: "", startDate: "", endDate: "", packageType: "Luxury", makkahNights: 5, madinahNights: 5, hotelTier: "5-star", totalSlots: 20, priceDisplay: "", imageUrl: "" })
             showToast("Trip created successfully", "success")
         } else {
             showToast("Failed to create trip", "error")
         }
+    }
+
+    const handleUpdateTrip = async (e: React.FormEvent) => {
+        e.preventDefault()
+        if (!editingTrip) return
+        const res = await fetch(`/api/admin/trips?id=${editingTrip.id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(tripForm) })
+        if (res.ok) {
+            const updated = await res.json()
+            setTrips(trips.map(t => t.id === updated.id ? updated : t))
+            setEditingTrip(null)
+            setTripForm({ title: "", startDate: "", endDate: "", packageType: "Luxury", makkahNights: 5, madinahNights: 5, hotelTier: "5-star", totalSlots: 20, priceDisplay: "", imageUrl: "" })
+            showToast("Trip updated successfully", "success")
+        } else {
+            showToast("Failed to update trip", "error")
+        }
+    }
+
+    const startEditTrip = (trip: PlannedTrip) => {
+        setEditingTrip(trip)
+        setTripForm({
+            title: trip.title,
+            startDate: format(new Date(trip.startDate), 'yyyy-MM-dd'),
+            endDate: format(new Date(trip.endDate), 'yyyy-MM-dd'),
+            packageType: trip.packageType,
+            makkahNights: trip.makkahNights,
+            madinahNights: trip.madinahNights,
+            hotelTier: trip.hotelTier,
+            totalSlots: trip.totalSlots,
+            priceDisplay: trip.priceDisplay || "",
+            imageUrl: trip.imageUrl || ""
+        })
+        setIsCreatingTrip(false)
     }
 
     const handleDeleteTrip = async (id: string) => {
@@ -298,7 +357,9 @@ export function AdminDashboard({ initialTrips, initialTripRequests, initialJoinR
     // Blocked Dates
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const [blockedDates, setBlockedDates] = React.useState<any[]>([])
-    const [newBlockedDate, setNewBlockedDate] = React.useState("")
+    const [viewDate, setViewDate] = React.useState(new Date())
+    const [selectionStart, setSelectionStart] = React.useState<Date | null>(null)
+    const [selectionEnd, setSelectionEnd] = React.useState<Date | null>(null)
 
     React.useEffect(() => {
         if (activeTab === 'availability') {
@@ -306,26 +367,68 @@ export function AdminDashboard({ initialTrips, initialTripRequests, initialJoinR
         }
     }, [activeTab])
 
-    const handleBlockDate = async () => {
-        if (!newBlockedDate) return
-        const res = await fetch('/api/admin/availability', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ date: newBlockedDate, reason: "Admin Blocked" }) })
-        if (res.ok) {
-            setBlockedDates([...blockedDates, await res.json()])
-            setNewBlockedDate("")
-            showToast("Date blocked", "success")
+    const handleBlockRange = async () => {
+        if (!selectionStart) return
+
+        let datesToBlock: string[] = []
+
+        if (selectionEnd) {
+            // Range
+            const start = selectionStart < selectionEnd ? selectionStart : selectionEnd
+            const end = selectionStart < selectionEnd ? selectionEnd : selectionStart
+            const days = eachDayOfInterval({ start, end })
+            datesToBlock = days.map(d => format(d, 'yyyy-MM-dd'))
         } else {
-            showToast("Failed to block date", "error")
+            // Single
+            datesToBlock = [format(selectionStart, 'yyyy-MM-dd')]
+        }
+
+        const res = await fetch('/api/admin/availability', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ dates: datesToBlock, reason: "Admin Blocked" })
+        })
+
+        if (res.ok) {
+            // Refresh blocked dates
+            const newDates = await res.json()
+            fetch('/api/admin/availability').then(res => res.json()).then(setBlockedDates)
+            setSelectionStart(null)
+            setSelectionEnd(null)
+            showToast("Dates blocked successfully", "success")
+        } else {
+            showToast("Failed to block dates", "error")
         }
     }
 
-    const handleUnblockDate = async (id: string) => {
-        if (confirm("Unblock?")) {
+    const handleUnblockDate = async (id: string, e: React.MouseEvent) => {
+        e.stopPropagation() // Prevent selection when clicking unblock
+        if (confirm("Unblock this date?")) {
             const res = await fetch(`/api/admin/availability?id=${id}`, { method: 'DELETE' })
             if (res.ok) {
                 setBlockedDates(blockedDates.filter(d => d.id !== id))
                 showToast("Date unblocked", "success")
             } else {
                 showToast("Failed to unblock", "error")
+            }
+        }
+    }
+
+    const handleDateClick = (date: Date) => {
+        if (!selectionStart || (selectionStart && selectionEnd)) {
+            setSelectionStart(date)
+            setSelectionEnd(null)
+        } else {
+            // If clicking the same date, treat as single selection
+            if (isSameDay(date, selectionStart)) {
+                return // Already selected
+            }
+            // Set end date
+            if (isBefore(date, selectionStart)) {
+                setSelectionEnd(selectionStart)
+                setSelectionStart(date)
+            } else {
+                setSelectionEnd(date)
             }
         }
     }
@@ -576,31 +679,70 @@ export function AdminDashboard({ initialTrips, initialTripRequests, initialJoinR
                                     </Button>
                                 </div>
 
-                                {isCreatingTrip && (
+                                {isCreatingTrip || editingTrip ? (
                                     <motion.form
                                         initial={{ opacity: 0, height: 0 }}
                                         animate={{ opacity: 1, height: 'auto' }}
-                                        onSubmit={handleCreateTrip}
+                                        onSubmit={editingTrip ? handleUpdateTrip : handleCreateTrip}
                                         className="bg-zinc-900/50 p-8 rounded-[2rem] border border-white/10 space-y-6 mb-8"
                                     >
+                                        <h3 className="text-lg font-bold text-white mb-4">{editingTrip ? 'Edit Trip' : 'New Trip'}</h3>
                                         <div className="grid grid-cols-2 gap-6">
-                                            <input required placeholder="Trip Title" value={newTrip.title} onChange={e => setNewTrip({ ...newTrip, title: e.target.value })} className="bg-black border border-white/10 rounded-xl p-4 text-white focus:border-primary outline-none transition-colors" />
-                                            <select value={newTrip.packageType} onChange={e => setNewTrip({ ...newTrip, packageType: e.target.value })} className="bg-black border border-white/10 rounded-xl p-4 text-white focus:border-primary outline-none transition-colors">
-                                                <option value="Luxury">Luxury</option>
-                                                <option value="Comfort">Comfort</option>
-                                                <option value="Budget">Budget</option>
-                                            </select>
-                                            <input required type="date" value={newTrip.startDate} onChange={e => setNewTrip({ ...newTrip, startDate: e.target.value })} className="bg-black border border-white/10 rounded-xl p-4 text-white focus:border-primary outline-none transition-colors" />
-                                            <input required type="date" value={newTrip.endDate} onChange={e => setNewTrip({ ...newTrip, endDate: e.target.value })} className="bg-black border border-white/10 rounded-xl p-4 text-white focus:border-primary outline-none transition-colors" />
-                                            <input required type="number" placeholder="Makkah Nights" value={newTrip.makkahNights} onChange={e => setNewTrip({ ...newTrip, makkahNights: parseInt(e.target.value) })} className="bg-black border border-white/10 rounded-xl p-4 text-white focus:border-primary outline-none transition-colors" />
-                                            <input required type="number" placeholder="Madinah Nights" value={newTrip.madinahNights} onChange={e => setNewTrip({ ...newTrip, madinahNights: parseInt(e.target.value) })} className="bg-black border border-white/10 rounded-xl p-4 text-white focus:border-primary outline-none transition-colors" />
-                                            <input placeholder="Hotel Tier" value={newTrip.hotelTier} onChange={e => setNewTrip({ ...newTrip, hotelTier: e.target.value })} className="bg-black border border-white/10 rounded-xl p-4 text-white focus:border-primary outline-none transition-colors" />
-                                            <input required type="number" placeholder="Total Slots" value={newTrip.totalSlots} onChange={e => setNewTrip({ ...newTrip, totalSlots: parseInt(e.target.value) })} className="bg-black border border-white/10 rounded-xl p-4 text-white focus:border-primary outline-none transition-colors" />
-                                            <input placeholder="Image URL (Unsplash)" value={newTrip.imageUrl} onChange={e => setNewTrip({ ...newTrip, imageUrl: e.target.value })} className="bg-black border border-white/10 rounded-xl p-4 text-white focus:border-primary outline-none transition-colors col-span-2" />
+                                            <div className="space-y-2">
+                                                <label className="text-sm text-gray-400 font-medium ml-1">Trip Title</label>
+                                                <input required placeholder="Summer Youth Group" value={tripForm.title} onChange={e => setTripForm({ ...tripForm, title: e.target.value })} className="w-full bg-black border border-white/10 rounded-xl p-4 text-white focus:border-primary outline-none transition-colors placeholder:text-gray-600" />
+                                            </div>
+                                            <div className="space-y-2">
+                                                <label className="text-sm text-gray-400 font-medium ml-1">Package Type</label>
+                                                <select value={tripForm.packageType} onChange={e => setTripForm({ ...tripForm, packageType: e.target.value })} className="w-full bg-black border border-white/10 rounded-xl p-4 text-white focus:border-primary outline-none transition-colors appearance-none">
+                                                    {fetchedPackages.length > 0 ? (
+                                                        fetchedPackages.map(pkg => (
+                                                            <option key={pkg.id} value={pkg.title}>{pkg.title}</option>
+                                                        ))
+                                                    ) : (
+                                                        <>
+                                                            <option value="Luxury">Luxury</option>
+                                                            <option value="Comfort">Comfort</option>
+                                                            <option value="Budget">Budget</option>
+                                                        </>
+                                                    )}
+                                                </select>
+                                            </div>
+                                            <div className="space-y-2">
+                                                <label className="text-sm text-gray-400 font-medium ml-1">Start Date</label>
+                                                <input required type="date" value={tripForm.startDate} onChange={e => setTripForm({ ...tripForm, startDate: e.target.value })} className="w-full bg-black border border-white/10 rounded-xl p-4 text-white focus:border-primary outline-none transition-colors" />
+                                            </div>
+                                            <div className="space-y-2">
+                                                <label className="text-sm text-gray-400 font-medium ml-1">End Date</label>
+                                                <input required type="date" value={tripForm.endDate} onChange={e => setTripForm({ ...tripForm, endDate: e.target.value })} className="w-full bg-black border border-white/10 rounded-xl p-4 text-white focus:border-primary outline-none transition-colors" />
+                                            </div>
+                                            <div className="space-y-2">
+                                                <label className="text-sm text-gray-400 font-medium ml-1">Makkah Nights</label>
+                                                <input required type="number" placeholder="5" value={tripForm.makkahNights} onChange={e => setTripForm({ ...tripForm, makkahNights: parseInt(e.target.value) })} className="w-full bg-black border border-white/10 rounded-xl p-4 text-white focus:border-primary outline-none transition-colors placeholder:text-gray-600" />
+                                            </div>
+                                            <div className="space-y-2">
+                                                <label className="text-sm text-gray-400 font-medium ml-1">Madinah Nights</label>
+                                                <input required type="number" placeholder="5" value={tripForm.madinahNights} onChange={e => setTripForm({ ...tripForm, madinahNights: parseInt(e.target.value) })} className="w-full bg-black border border-white/10 rounded-xl p-4 text-white focus:border-primary outline-none transition-colors placeholder:text-gray-600" />
+                                            </div>
+                                            <div className="space-y-2">
+                                                <label className="text-sm text-gray-400 font-medium ml-1">Hotel Tier</label>
+                                                <input placeholder="Economy" value={tripForm.hotelTier} onChange={e => setTripForm({ ...tripForm, hotelTier: e.target.value })} className="w-full bg-black border border-white/10 rounded-xl p-4 text-white focus:border-primary outline-none transition-colors placeholder:text-gray-600" />
+                                            </div>
+                                            <div className="space-y-2">
+                                                <label className="text-sm text-gray-400 font-medium ml-1">Total Slots</label>
+                                                <input required type="number" placeholder="40" value={tripForm.totalSlots} onChange={e => setTripForm({ ...tripForm, totalSlots: parseInt(e.target.value) })} className="w-full bg-black border border-white/10 rounded-xl p-4 text-white focus:border-primary outline-none transition-colors placeholder:text-gray-600" />
+                                            </div>
+                                            <div className="space-y-2 col-span-2">
+                                                <label className="text-sm text-gray-400 font-medium ml-1">Image URL</label>
+                                                <input placeholder="https://images.unsplash.com/..." value={tripForm.imageUrl} onChange={e => setTripForm({ ...tripForm, imageUrl: e.target.value })} className="w-full bg-black border border-white/10 rounded-xl p-4 text-white focus:border-primary outline-none transition-colors placeholder:text-gray-600" />
+                                            </div>
                                         </div>
-                                        <Button type="submit" className="w-full rounded-xl py-4 text-lg">Create Trip</Button>
+                                        <div className="flex gap-4">
+                                            <Button type="submit" className="flex-1 rounded-xl py-4 text-lg">{editingTrip ? 'Update Trip' : 'Create Trip'}</Button>
+                                            <Button type="button" variant="outline" onClick={() => { setIsCreatingTrip(false); setEditingTrip(null) }} className="flex-1 rounded-xl py-4 text-lg">Cancel</Button>
+                                        </div>
                                     </motion.form>
-                                )}
+                                ) : null}
 
                                 <div className="grid grid-cols-1 gap-4">
                                     {trips.map(trip => (
@@ -614,9 +756,14 @@ export function AdminDashboard({ initialTrips, initialTripRequests, initialJoinR
                                                     </p>
                                                 </div>
                                             </div>
-                                            <Button size="sm" variant="ghost" onClick={() => handleDeleteTrip(trip.id)} className="text-red-500 hover:text-red-400 hover:bg-red-900/20 opacity-0 group-hover:opacity-100 transition-opacity rounded-full">
-                                                <Trash className="w-4 h-4" />
-                                            </Button>
+                                            <div className="flex gap-2">
+                                                <Button size="sm" variant="ghost" onClick={() => startEditTrip(trip)} className="text-gray-400 hover:text-white hover:bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity rounded-full">
+                                                    Edit
+                                                </Button>
+                                                <Button size="sm" variant="ghost" onClick={() => handleDeleteTrip(trip.id)} className="text-red-500 hover:text-red-400 hover:bg-red-900/20 opacity-0 group-hover:opacity-100 transition-opacity rounded-full">
+                                                    <Trash className="w-4 h-4" />
+                                                </Button>
+                                            </div>
                                         </div>
                                     ))}
                                 </div>
@@ -627,33 +774,88 @@ export function AdminDashboard({ initialTrips, initialTripRequests, initialJoinR
                             <div className="space-y-6">
                                 <div className="flex justify-between items-center mb-8">
                                     <h2 className="text-xl font-bold text-white">Blocked Dates</h2>
-                                    <div className="flex gap-2">
-                                        <input
-                                            type="date"
-                                            value={newBlockedDate}
-                                            onChange={(e) => setNewBlockedDate(e.target.value)}
-                                            className="bg-black border border-white/10 rounded-full px-4 py-2 text-white outline-none focus:border-primary"
-                                        />
-                                        <Button onClick={handleBlockDate} disabled={!newBlockedDate} className="rounded-full">
-                                            <Plus className="mr-2 h-4 w-4" /> Block Date
+                                    <div className="flex gap-4 items-center">
+                                        {selectionStart && (
+                                            <div className="text-sm text-gray-400">
+                                                Selected: <span className="text-white font-bold">{format(selectionStart, 'MMM d')}</span>
+                                                {selectionEnd && <> - <span className="text-white font-bold">{format(selectionEnd, 'MMM d')}</span></>}
+                                            </div>
+                                        )}
+                                        <Button onClick={handleBlockRange} disabled={!selectionStart} className="rounded-full">
+                                            {selectionStart && selectionEnd
+                                                ? `Block ${eachDayOfInterval({ start: selectionStart, end: selectionEnd }).length} Days`
+                                                : "Block Selected"}
                                         </Button>
                                     </div>
                                 </div>
 
-                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                    {blockedDates.map(date => (
-                                        <div key={date.id} className="bg-zinc-900/50 border border-white/10 p-6 rounded-[2rem] flex justify-between items-center hover:bg-zinc-900 transition-colors">
-                                            <span className="text-white font-medium">
-                                                {format(new Date(date.date), 'MMMM d, yyyy')}
-                                            </span>
-                                            <Button size="sm" variant="ghost" onClick={() => handleUnblockDate(date.id)} className="text-red-500 hover:text-red-400 hover:bg-red-900/20 rounded-full">
-                                                <Trash className="w-4 h-4" />
-                                            </Button>
-                                        </div>
-                                    ))}
-                                    {blockedDates.length === 0 && (
-                                        <div className="text-center py-20 col-span-3 text-gray-500">No dates blocked.</div>
-                                    )}
+                                <div className="bg-zinc-900/50 border border-white/10 rounded-[2rem] p-8">
+                                    {/* Month Navigation */}
+                                    <div className="flex items-center justify-between mb-8">
+                                        <Button size="sm" variant="ghost" onClick={() => setViewDate(addMonths(viewDate, -1))} className="rounded-full w-10 h-10 p-0 text-white hover:bg-white/10"><ChevronLeft className="w-5 h-5" /></Button>
+                                        <h3 className="text-xl font-bold text-white">{format(viewDate, 'MMMM yyyy')}</h3>
+                                        <Button size="sm" variant="ghost" onClick={() => setViewDate(addMonths(viewDate, 1))} className="rounded-full w-10 h-10 p-0 text-white hover:bg-white/10"><ChevronRight className="w-5 h-5" /></Button>
+                                    </div>
+
+                                    <div className="grid grid-cols-7 gap-4 mb-4">
+                                        {['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map(d => (
+                                            <div key={d} className="text-center text-sm font-bold text-gray-500 uppercase tracking-widest">{d}</div>
+                                        ))}
+                                    </div>
+                                    <div className="grid grid-cols-7 gap-2">
+                                        {(() => {
+                                            const start = startOfMonth(viewDate)
+                                            const end = endOfMonth(viewDate)
+                                            const days = eachDayOfInterval({ start, end })
+
+                                            // Padding days
+                                            const startDay = start.getDay()
+                                            const padding = Array.from({ length: startDay }, (_, i) => i)
+
+                                            return (
+                                                <>
+                                                    {padding.map(i => <div key={`pad-${i}`} />)}
+                                                    {days.map((day, i) => {
+                                                        const dateStr = format(day, 'yyyy-MM-dd')
+                                                        const isBlocked = blockedDates.some(bd => format(new Date(bd.date), 'yyyy-MM-dd') === dateStr)
+                                                        const blockedId = blockedDates.find(bd => format(new Date(bd.date), 'yyyy-MM-dd') === dateStr)?.id
+
+                                                        const isSelected = selectionStart && (
+                                                            isSameDay(day, selectionStart) ||
+                                                            (selectionEnd && isSameDay(day, selectionEnd)) ||
+                                                            (selectionEnd && isAfter(day, selectionStart) && isBefore(day, selectionEnd))
+                                                        )
+
+                                                        const isStart = selectionStart && isSameDay(day, selectionStart)
+                                                        const isEnd = selectionEnd && isSameDay(day, selectionEnd)
+
+                                                        return (
+                                                            <div
+                                                                key={i}
+                                                                onClick={() => handleDateClick(day)}
+                                                                className={`aspect-square rounded-xl flex items-center justify-center cursor-pointer transition-all border relative overflow-hidden ${isBlocked
+                                                                    ? 'bg-red-500/10 border-red-500/30 text-red-500' // Blocked style
+                                                                    : isSelected
+                                                                        ? 'bg-primary/20 border-primary/50 text-primary'
+                                                                        : 'bg-black/40 border-white/5 text-gray-400 hover:bg-white/10 hover:text-white'
+                                                                    } ${isStart || isEnd ? 'ring-2 ring-primary ring-offset-2 ring-offset-black' : ''}`}
+                                                            >
+                                                                <span className="text-sm font-medium relative z-10">{format(day, 'd')}</span>
+                                                                {isBlocked && (
+                                                                    <div className="absolute inset-0 flex items-center justify-center z-20 bg-black/60 opacity-0 hover:opacity-100 transition-opacity">
+                                                                        <Button size="sm" variant="ghost" onClick={(e) => blockedId && handleUnblockDate(blockedId, e)} className="h-6 w-6 p-0 rounded-full bg-red-500 text-white hover:bg-red-600">
+                                                                            <X className="w-3 h-3" />
+                                                                        </Button>
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        )
+                                                    })}
+                                                </>
+                                            )
+                                        })()}
+                                    </div>
+                                    <p className="text-gray-500 text-sm mt-6 text-center">Click start date, then end date to select a range.</p>
                                 </div>
                             </div>
                         )}
@@ -692,7 +894,7 @@ export function AdminDashboard({ initialTrips, initialTripRequests, initialJoinR
                                             </div>
                                             <label className="flex items-center space-x-2 cursor-pointer">
                                                 <input type="checkbox" checked={packageForm.isPopular} onChange={e => setPackageForm({ ...packageForm, isPopular: e.target.checked })} className="rounded border-gray-600 bg-black text-primary" />
-                                                <span className="text-white">Mark as Popular/Premium</span>
+                                                <span className="text-white">Mark as Popular</span>
                                             </label>
                                         </div>
                                         <div className="flex gap-4">

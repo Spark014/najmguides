@@ -46,7 +46,7 @@ export default function Home() {
             <div className="inline-block mb-4 px-4 py-1.5 rounded-full bg-white/5 border border-white/10 backdrop-blur-md">
               <span className="text-primary text-sm font-medium tracking-widest uppercase">Najm Guides</span>
             </div>
-            <h1 className="text-5xl md:text-8xl font-bold tracking-tighter text-white mb-6">
+            <h1 className="text-4xl md:text-7xl lg:text-8xl font-bold tracking-tighter text-white mb-6">
               <TypewriterEffect text="Umrah Made Simple." className="gold-gradient-text" />
             </h1>
             <p className="text-xl md:text-2xl text-gray-300 max-w-2xl mx-auto font-light leading-relaxed">
@@ -86,7 +86,7 @@ export default function Home() {
       </section>
 
       {/* What We Handle */}
-      <section className="py-32 bg-black relative">
+      <section className="py-20 md:py-32 bg-black relative">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-primary/5 via-transparent to-transparent opacity-30" />
         <div className="container px-4 mx-auto relative z-10">
           <motion.div
@@ -130,7 +130,7 @@ export default function Home() {
       </section>
 
       {/* Two Paths */}
-      <section className="py-32 bg-zinc-950">
+      <section className="py-20 md:py-32 bg-zinc-950">
         <div className="container px-4 mx-auto">
           <motion.div
             className="text-center mb-20"

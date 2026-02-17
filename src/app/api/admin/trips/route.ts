@@ -42,6 +42,53 @@ export async function POST(request: Request) {
     }
 }
 
+
+export async function PUT(request: Request) {
+    try {
+        const { searchParams } = new URL(request.url)
+        const id = searchParams.get('id')
+
+        if (!id) return NextResponse.json({ error: 'Missing ID' }, { status: 400 })
+
+        const body = await request.json()
+
+        // Use service role to bypass RLS
+        const supabase = createClient(
+            process.env.NEXT_PUBLIC_SUPABASE_URL!,
+            process.env.SUPABASE_SERVICE_ROLE_KEY!
+        )
+
+        const { data, error } = await supabase
+            .from('PlannedTrip')
+            .update({
+                title: body.title,
+                startDate: new Date(body.startDate).toISOString(),
+                endDate: new Date(body.endDate).toISOString(),
+                packageType: body.packageType,
+                makkahNights: body.makkahNights,
+                madinahNights: body.madinahNights,
+                hotelTier: body.hotelTier,
+                totalSlots: body.totalSlots,
+                priceDisplay: body.priceDisplay,
+                imageUrl: body.imageUrl,
+                updatedAt: new Date().toISOString()
+            })
+            .eq('id', id)
+            .select()
+            .single()
+
+        if (error) {
+            console.error('Supabase Error:', error)
+            throw new Error(error.message)
+        }
+
+        return NextResponse.json(data)
+    } catch (error) {
+        console.error('Error updating trip:', error)
+        return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 })
+    }
+}
+
 export async function DELETE(request: Request) {
     const { searchParams } = new URL(request.url)
     const id = searchParams.get('id')
@@ -72,4 +119,4 @@ export async function DELETE(request: Request) {
         console.error('Error deleting trip:', error)
         return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 })
     }
-}
+

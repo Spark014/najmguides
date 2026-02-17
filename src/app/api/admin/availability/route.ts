@@ -30,7 +30,28 @@ export async function POST(request: Request) {
             process.env.SUPABASE_SERVICE_ROLE_KEY!
         )
         const body = await request.json()
-        const { date, reason } = body
+        const { date, reason, dates } = body
+
+        // Handle Bulk Blocking (Range)
+        if (dates && Array.isArray(dates)) {
+            const updates = dates.map(d => {
+                // Generate a unique ID for each entry
+                const id = `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`
+                return {
+                    id,
+                    date: new Date(d).toISOString(),
+                    reason: reason || "Admin Blocked Range"
+                }
+            })
+
+            const { error } = await supabase
+                .from('BlockedDate')
+                .upsert(updates, { onConflict: 'date' })
+
+            if (error) throw error
+
+            return NextResponse.json({ success: true, count: updates.length })
+        }
 
         const { data, error } = await supabase
             .from('BlockedDate')
@@ -43,8 +64,9 @@ export async function POST(request: Request) {
 
         if (error) throw error
         return NextResponse.json(data)
-    } catch {
-        return NextResponse.json({ error: 'Failed to block date' }, { status: 500 })
+    } catch (e: any) {
+        console.error("Availability API Error:", e)
+        return NextResponse.json({ error: e.message || 'Failed to block date' }, { status: 500 })
     }
 }
 

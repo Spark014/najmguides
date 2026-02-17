@@ -8,19 +8,20 @@ import { Button } from "@/components/ui/Button"
 
 interface PlannedTripsClientProps {
     initialTrips: PlannedTrip[]
+    availablePackageTypes: string[]
 }
 
-export function PlannedTripsClient({ initialTrips }: PlannedTripsClientProps) {
+export function PlannedTripsClient({ initialTrips, availablePackageTypes }: PlannedTripsClientProps) {
     const [trips] = React.useState(initialTrips)
     const [selectedTrip, setSelectedTrip] = React.useState<PlannedTrip | null>(null)
     const [isModalOpen, setIsModalOpen] = React.useState(false)
 
     // Filters
-    const [filterType, setFilterType] = React.useState<'all' | 'budget' | 'comfort' | 'luxury'>('all')
+    const [filterType, setFilterType] = React.useState<string>('all')
 
     const filteredTrips = trips.filter(trip => {
         if (filterType === 'all') return true
-        return trip.packageType.toLowerCase() === filterType
+        return trip.packageType === filterType
     })
 
     const handleJoin = (trip: PlannedTrip) => {
@@ -39,27 +40,16 @@ export function PlannedTripsClient({ initialTrips }: PlannedTripsClientProps) {
                 >
                     All Trips
                 </Button>
-                <Button
-                    variant={filterType === 'budget' ? 'primary' : 'outline'}
-                    onClick={() => setFilterType('budget')}
-                    className="rounded-full px-6"
-                >
-                    Budget
-                </Button>
-                <Button
-                    variant={filterType === 'comfort' ? 'primary' : 'outline'}
-                    onClick={() => setFilterType('comfort')}
-                    className="rounded-full px-6"
-                >
-                    Comfort
-                </Button>
-                <Button
-                    variant={filterType === 'luxury' ? 'primary' : 'outline'}
-                    onClick={() => setFilterType('luxury')}
-                    className="rounded-full px-6"
-                >
-                    Luxury
-                </Button>
+                {availablePackageTypes.map(type => (
+                    <Button
+                        key={type}
+                        variant={filterType === type ? 'primary' : 'outline'}
+                        onClick={() => setFilterType(type)}
+                        className="rounded-full px-6 capitalize"
+                    >
+                        {type}
+                    </Button>
+                ))}
             </div>
 
             {/* Grid */}
