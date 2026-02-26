@@ -37,7 +37,7 @@ const Toast = ({ message, type, onClose }: { message: string, type: 'success' | 
         initial={{ opacity: 0, y: 50, scale: 0.9 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
         exit={{ opacity: 0, scale: 0.9, transition: { duration: 0.2 } }}
-        className={`fixed bottom-8 right-8 z-50 flex items-center gap-4 px-6 py-4 liquid-glass-dark squircle shadow-2xl ${type === 'success' ? 'text-green-400' : 'text-red-400'
+        className={`fixed bottom-8 right-8 z-50 flex items-center gap-4 px-6 py-4 rounded-2xl shadow-2xl backdrop-blur-xl border border-white/10 ${type === 'success' ? 'bg-green-500/10 text-green-400' : 'bg-red-500/10 text-red-400'
             }`}
     >
         <div className={`p-2 rounded-full ${type === 'success' ? 'bg-green-500/20' : 'bg-red-500/20'}`}>
@@ -64,15 +64,12 @@ interface AdminDashboardProps {
 // Sub-components defined outside to prevent re-renders
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const SidebarItem = ({ id, icon: Icon, label, count, activeTab, setActiveTab }: any) => (
-    <motion.button
+    <button
         type="button"
-        whileTap={{ scale: 0.9, y: 1, filter: "brightness(0.9)" }}
-        whileHover={{ scale: 1.02 }}
-        transition={{ type: "spring", stiffness: 400, damping: 15 }}
         onClick={() => setActiveTab(id)}
         className={`w-full flex items-center space-x-3 px-4 py-3 rounded-full transition-all duration-300 group ${activeTab === id
-            ? 'water-capsule text-white shadow-lg'
-            : 'text-gray-400 hover:text-white'
+            ? 'bg-white/10 text-white shadow-[0_0_20px_rgba(255,255,255,0.1)]'
+            : 'text-gray-400 hover:bg-white/5 hover:text-white'
             }`}
     >
         <div className={`p-2 rounded-full transition-colors ${activeTab === id ? 'bg-primary text-black' : 'bg-white/5 group-hover:bg-white/10'}`}>
@@ -84,7 +81,7 @@ const SidebarItem = ({ id, icon: Icon, label, count, activeTab, setActiveTab }: 
                 {count}
             </span>
         )}
-    </motion.button>
+    </button>
 )
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -93,7 +90,7 @@ const RequestCard = ({ req, type, updateRequestStatus }: { req: any, type: 'trip
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
         whileHover={{ scale: 1.01 }}
-        className="liquid-glass p-6 squircle relative overflow-hidden group shadow-2xl border border-white/5"
+        className="bg-black border border-white/10 p-6 rounded-[2rem] shadow-2xl relative overflow-hidden group"
     >
         <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
 
@@ -137,7 +134,7 @@ const RequestCard = ({ req, type, updateRequestStatus }: { req: any, type: 'trip
             </div>
         </div>
 
-        <div className="relative z-10 liquid-glass-input rounded-3xl p-5 grid grid-cols-2 gap-6">
+        <div className="relative z-10 bg-zinc-900/50 rounded-3xl p-5 border border-white/5 grid grid-cols-2 gap-6">
             <div>
                 <span className="block text-[10px] text-gray-500 uppercase tracking-widest font-bold mb-2">Contact Info</span>
                 <div className="space-y-1">
@@ -577,10 +574,10 @@ export function AdminDashboard({ initialTrips, initialTripRequests, initialJoinR
                                             initial={{ opacity: 0, y: 20 }}
                                             animate={{ opacity: 1, y: 0 }}
                                             transition={{ delay: i * 0.1 }}
-                                            className="liquid-glass-dark p-6 squircle hover:scale-[1.02] transition-transform group"
+                                            className="bg-zinc-900/50 border border-white/5 p-6 rounded-[2rem] hover:bg-zinc-900 transition-colors group"
                                         >
                                             <div className="flex items-center justify-between mb-4">
-                                                <div className={`p-4 rounded-full liquid-glass ${stat.color} group-hover:scale-110 transition-transform`}>
+                                                <div className={`p-4 rounded-full bg-black border border-white/5 ${stat.color} group-hover:scale-110 transition-transform`}>
                                                     <stat.icon className="w-6 h-6" />
                                                 </div>
                                                 <span className="text-4xl font-bold text-white tracking-tighter">{stat.value}</span>
@@ -590,7 +587,7 @@ export function AdminDashboard({ initialTrips, initialTripRequests, initialJoinR
                                     ))}
                                 </div>
 
-                                <div className="liquid-glass-dark squircle p-8">
+                                <div className="bg-zinc-900/30 border border-white/5 rounded-[2.5rem] p-8">
                                     <div className="flex items-center gap-4 mb-6">
                                         <div className="w-1.5 h-6 bg-primary rounded-full" />
                                         <h3 className="text-xl font-bold text-white tracking-tight">Recent Activity</h3>
@@ -607,11 +604,9 @@ export function AdminDashboard({ initialTrips, initialTripRequests, initialJoinR
                                                 const displayStatus = isLatest ? 'New' : (req.status === 'New' ? 'Pending' : req.status)
 
                                                 return (
-                                                    <motion.div key={req.id}
+                                                    <div key={req.id}
                                                         onClick={() => setActiveTab(isTrip ? 'requests' : 'joins')}
-                                                        whileTap={{ scale: 0.95, filter: "brightness(0.9)" }}
-                                                        transition={{ type: "spring", stiffness: 400, damping: 15 }}
-                                                        className="flex items-center justify-between p-4 water-capsule hover:bg-white/10 transition-colors cursor-pointer group shadow-sm"
+                                                        className="flex items-center justify-between p-4 rounded-[1.5rem] bg-white/5 hover:bg-white/10 transition-all cursor-pointer group border border-white/5 shadow-sm hover:shadow-md hover:border-white/10"
                                                     >
                                                         <div className="flex items-center gap-4">
                                                             <div className={`w-10 h-10 rounded-full flex items-center justify-center border border-white/5 transition-colors ${isLatest ? 'bg-blue-500/10 text-blue-400 group-hover:bg-blue-500/20' :
@@ -633,7 +628,7 @@ export function AdminDashboard({ initialTrips, initialTripRequests, initialJoinR
                                                             </div>
                                                         </div>
                                                         <span className="text-xs text-gray-500 font-medium bg-black px-3 py-1 rounded-full border border-white/5">{format(new Date(req.createdAt), 'MMM d')}</span>
-                                                    </motion.div>
+                                                    </div>
                                                 )
                                             })}
                                         {(tripRequests.length + joinRequests.length) === 0 && <p className="text-gray-500 text-center py-4">No recent activity.</p>}
@@ -690,11 +685,10 @@ export function AdminDashboard({ initialTrips, initialTripRequests, initialJoinR
 
                                 {isCreatingTrip || editingTrip ? (
                                     <motion.form
-                                        initial={{ opacity: 0, height: 0, y: -20, filter: "blur(10px)" }}
-                                        animate={{ opacity: 1, height: 'auto', y: 0, filter: "blur(0px)" }}
-                                        transition={{ type: "spring", stiffness: 300, damping: 25 }}
+                                        initial={{ opacity: 0, height: 0 }}
+                                        animate={{ opacity: 1, height: 'auto' }}
                                         onSubmit={editingTrip ? handleUpdateTrip : handleCreateTrip}
-                                        className="liquid-glass-dark p-8 squircle border border-white/10 space-y-6 mb-8 overflow-hidden shadow-2xl"
+                                        className="bg-zinc-900/50 p-8 rounded-[2rem] border border-white/10 space-y-6 mb-8"
                                     >
                                         <h3 className="text-lg font-bold text-white mb-4">{editingTrip ? 'Edit Trip' : 'New Trip'}</h3>
                                         <div className="grid grid-cols-2 gap-6">
@@ -744,7 +738,7 @@ export function AdminDashboard({ initialTrips, initialTripRequests, initialJoinR
                                             </div>
                                             <div className="space-y-2 col-span-2">
                                                 <label className="text-sm text-gray-400 font-medium ml-1">Image URL</label>
-                                                <input placeholder="https://images.unsplash.com/..." value={tripForm.imageUrl} onChange={e => setTripForm({ ...tripForm, imageUrl: e.target.value })} className="w-full liquid-glass-input rounded-xl p-4 text-white focus:border-primary outline-none transition-colors placeholder:text-gray-600" />
+                                                <input placeholder="https://images.unsplash.com/..." value={tripForm.imageUrl} onChange={e => setTripForm({ ...tripForm, imageUrl: e.target.value })} className="w-full bg-black border border-white/10 rounded-xl p-4 text-white focus:border-primary outline-none transition-colors placeholder:text-gray-600" />
                                             </div>
                                         </div>
                                         <div className="flex gap-4">
@@ -756,7 +750,7 @@ export function AdminDashboard({ initialTrips, initialTripRequests, initialJoinR
 
                                 <div className="grid grid-cols-1 gap-4">
                                     {trips.map(trip => (
-                                        <motion.div key={trip.id} whileHover={{ scale: 1.01 }} className="liquid-glass border border-white/10 p-6 squircle flex justify-between items-center group transition-colors hover:bg-white/5">
+                                        <div key={trip.id} className="bg-zinc-900/50 border border-white/10 p-6 rounded-[2rem] flex justify-between items-center group hover:border-primary/30 transition-all hover:bg-zinc-900">
                                             <div className="flex items-center gap-4">
                                                 {trip.imageUrl && <NextImage src={trip.imageUrl} alt={trip.title} width={64} height={64} className="w-16 h-16 rounded-xl object-cover" />}
                                                 <div>
@@ -774,7 +768,7 @@ export function AdminDashboard({ initialTrips, initialTripRequests, initialJoinR
                                                     <Trash className="w-4 h-4" />
                                                 </Button>
                                             </div>
-                                        </motion.div>
+                                        </div>
                                     ))}
                                 </div>
                             </div>
@@ -799,7 +793,7 @@ export function AdminDashboard({ initialTrips, initialTripRequests, initialJoinR
                                     </div>
                                 </div>
 
-                                <div className="liquid-glass-dark squircle border border-white/10 p-8 shadow-2xl">
+                                <div className="bg-zinc-900/50 border border-white/10 rounded-[2rem] p-8">
                                     {/* Month Navigation */}
                                     <div className="flex items-center justify-between mb-8">
                                         <Button size="sm" variant="ghost" onClick={() => setViewDate(addMonths(viewDate, -1))} className="rounded-full w-10 h-10 p-0 text-white hover:bg-white/10"><ChevronLeft className="w-5 h-5" /></Button>
