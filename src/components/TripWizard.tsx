@@ -71,7 +71,8 @@ export function TripWizard({ packages }: TripWizardProps) {
         fetch('/api/admin/availability')
             .then(res => res.json())
             .then((data: { date: string }[]) => {
-                setBlockedDates(data.map(d => new Date(d.date)))
+                // Ensure date string is parsed exactly as local midnight without timezone shifts
+                setBlockedDates(data.map(d => new Date(d.date.split('T')[0] + 'T00:00:00')))
             })
             .catch(err => console.error("Failed to fetch blocked dates", err))
 
@@ -151,7 +152,7 @@ export function TripWizard({ packages }: TripWizardProps) {
 
     if (isSuccess) {
         return (
-            <div className="text-center py-20 px-6 space-y-8 animate-in fade-in zoom-in duration-700 max-w-lg mx-auto bg-black/60 backdrop-blur-2xl rounded-[3rem] border border-white/10 shadow-2xl">
+            <div className="text-center py-20 px-6 space-y-8 animate-in fade-in zoom-in duration-700 max-w-lg mx-auto liquid-glass-dark squircle shadow-2xl">
                 <div className="w-24 h-24 bg-[#D4AF37] rounded-full flex items-center justify-center mx-auto shadow-[0_0_30px_rgba(212,175,55,0.4)]">
                     <Check className="w-12 h-12 text-black" />
                 </div>
@@ -206,7 +207,7 @@ export function TripWizard({ packages }: TripWizardProps) {
                 ))}
             </div>
 
-            <div className="bg-zinc-900/40 backdrop-blur-3xl border border-white/10 rounded-[2rem] md:rounded-[3rem] overflow-hidden shadow-2xl relative min-h-[600px] flex flex-col">
+            <div className="liquid-glass-dark squircle overflow-hidden shadow-2xl relative min-h-[600px] flex flex-col">
                 <div className="flex-grow p-6 md:p-12 relative">
                     <AnimatePresence initial={false} custom={direction} mode="wait">
                         <motion.div
@@ -233,7 +234,7 @@ export function TripWizard({ packages }: TripWizardProps) {
                                     </div>
 
                                     {/* Gold Calendar */}
-                                    <div className="bg-black/40 border border-white/10 rounded-[2rem] p-6 backdrop-blur-md inline-block">
+                                    <div className="liquid-glass p-6 squircle inline-block">
                                         <div className="flex items-center justify-between mb-8 px-2">
                                             <button onClick={prevMonth} disabled={isBefore(addMonths(currentMonth, -1), startOfMonth(minDate))} className="p-2 hover:bg-white/10 rounded-full disabled:opacity-30 transition-colors"><ChevronLeft className="w-6 h-6 text-white" /></button>
                                             <span className="text-xl font-bold text-[#D4AF37] tracking-wide">{format(currentMonth, 'MMMM yyyy')}</span>
@@ -259,7 +260,8 @@ export function TripWizard({ packages }: TripWizardProps) {
                                                             "h-12 w-12 rounded-full flex items-center justify-center text-base font-medium transition-all duration-200 relative",
                                                             isSelected && "bg-[#D4AF37] text-black shadow-[0_0_20px_rgba(212,175,55,0.4)] scale-110 z-10 font-bold",
                                                             !isSelected && !isDisabled && "text-white hover:bg-white/10 hover:text-[#D4AF37]",
-                                                            isDisabled && "text-gray-800 cursor-not-allowed",
+                                                            isDisabled && !isBlocked && "text-gray-800 cursor-not-allowed",
+                                                            isBlocked && "text-red-500/50 cursor-not-allowed line-through decoration-red-500/50 bg-red-500/5",
                                                             isToday(day) && !isSelected && "ring-1 ring-[#D4AF37]/50 text-[#D4AF37]"
                                                         )}
                                                     >
@@ -326,7 +328,7 @@ export function TripWizard({ packages }: TripWizardProps) {
                                                         const val = e.target.value
                                                         setFormData({ ...formData, travelers: val === '' ? '' : parseInt(val) })
                                                     }}
-                                                    className="w-full h-14 bg-white/5 border border-white/10 rounded-2xl px-6 text-xl text-white focus:bg-white/10 focus:border-[#D4AF37]/50 focus:outline-none transition-all placeholder:text-gray-600"
+                                                    className="w-full h-14 liquid-glass-input rounded-2xl px-6 text-xl text-white placeholder:text-gray-500"
                                                 />
                                             </div>
 
@@ -336,7 +338,7 @@ export function TripWizard({ packages }: TripWizardProps) {
                                                     type="text"
                                                     value={formData.nationality}
                                                     onChange={(e) => setFormData({ ...formData, nationality: e.target.value })}
-                                                    className="w-full h-14 bg-white/5 border border-white/10 rounded-2xl px-6 text-lg text-white focus:bg-white/10 focus:border-[#D4AF37]/50 focus:outline-none transition-all placeholder:text-gray-600"
+                                                    className="w-full h-14 liquid-glass-input rounded-2xl px-6 text-lg text-white placeholder:text-gray-500"
                                                     placeholder="e.g. British, American, Canadian"
                                                 />
                                             </div>
@@ -347,7 +349,7 @@ export function TripWizard({ packages }: TripWizardProps) {
                                             <textarea
                                                 value={formData.notes}
                                                 onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                                                className="w-full bg-white/5 border border-white/10 rounded-3xl px-6 py-5 text-lg text-white focus:bg-white/10 focus:border-[#D4AF37]/50 focus:outline-none h-32 resize-none transition-all placeholder:text-gray-600 leading-relaxed"
+                                                className="w-full liquid-glass-input squircle px-6 py-5 text-lg text-white h-32 resize-none placeholder:text-gray-500 leading-relaxed"
                                                 placeholder="Any dietary restrictions, accessibility needs, or specific preferences..."
                                             />
                                         </div>
@@ -369,7 +371,7 @@ export function TripWizard({ packages }: TripWizardProps) {
                                                 type="text"
                                                 value={formData.fullName}
                                                 onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
-                                                className="w-full h-16 bg-white/5 border border-white/10 rounded-2xl px-6 text-xl text-white focus:bg-white/10 focus:border-[#D4AF37]/50 focus:outline-none transition-all placeholder:text-gray-600"
+                                                className="w-full h-16 liquid-glass-input rounded-2xl px-6 text-xl text-white placeholder:text-gray-500"
                                                 placeholder="John Doe"
                                             />
                                         </div>
@@ -380,7 +382,7 @@ export function TripWizard({ packages }: TripWizardProps) {
                                                 type="email"
                                                 value={formData.email}
                                                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                                                className="w-full h-16 bg-white/5 border border-white/10 rounded-2xl px-6 text-xl text-white focus:bg-white/10 focus:border-[#D4AF37]/50 focus:outline-none transition-all placeholder:text-gray-600"
+                                                className="w-full h-16 liquid-glass-input rounded-2xl px-6 text-xl text-white placeholder:text-gray-500"
                                                 placeholder="john@example.com"
                                             />
                                         </div>
@@ -391,7 +393,7 @@ export function TripWizard({ packages }: TripWizardProps) {
                                                 type="tel"
                                                 value={formData.phone}
                                                 onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                                                className="w-full h-16 bg-white/5 border border-white/10 rounded-2xl px-6 text-xl text-white focus:bg-white/10 focus:border-[#D4AF37]/50 focus:outline-none transition-all placeholder:text-gray-600"
+                                                className="w-full h-16 liquid-glass-input rounded-2xl px-6 text-xl text-white placeholder:text-gray-500"
                                                 placeholder="+1 (555) 000-0000"
                                             />
                                         </div>
@@ -407,7 +409,7 @@ export function TripWizard({ packages }: TripWizardProps) {
                     {step > 1 ? (
                         <button
                             onClick={handleBack}
-                            className="text-gray-400 hover:text-white px-6 py-3 rounded-full font-medium transition-colors hover:bg-white/5"
+                            className="text-gray-400 hover:text-white px-6 py-3 rounded-full font-medium transition-colors hover:bg-white/10"
                         >
                             Back
                         </button>
@@ -434,6 +436,6 @@ export function TripWizard({ packages }: TripWizardProps) {
                     )}
                 </div>
             </div>
-        </div>
+        </div >
     )
 }

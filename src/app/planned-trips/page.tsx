@@ -16,6 +16,16 @@ export default async function PlannedTripsPage() {
         const cookieStore = await cookies()
         const supabase = createClient(cookieStore)
 
+        // Fetch packages from Package table
+        const { data: packagesData } = await supabase
+            .from('Package')
+            .select('title')
+            .order('order', { ascending: true })
+
+        if (packagesData) {
+            packageTypes = packagesData.map(pkg => pkg.title)
+        }
+
         const { data, error: supabaseError } = await supabase
             .from('PlannedTrip')
             .select('*')
@@ -37,10 +47,6 @@ export default async function PlannedTripsPage() {
                 createdAt: new Date(trip.createdAt),
                 updatedAt: new Date(trip.updatedAt)
             })) as PlannedTrip[]
-
-            // Extract unique package types
-            const uniqueTypes = new Set(trips.map(t => t.packageType))
-            packageTypes = Array.from(uniqueTypes)
         }
     } catch (e) {
         console.error("Failed to fetch trips:", e)

@@ -23,12 +23,14 @@ export default async function PackagesPage() {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-6xl mx-auto mb-20 place-content-center">
                     {packages?.map((pkg) => (
-                        <div key={pkg.id} className={`flex flex-col relative group transition-all duration-300 rounded-[2.5rem] p-8 ${pkg.isPopular
-                            ? 'bg-black border border-primary/50 shadow-[0_0_30px_rgba(212,175,55,0.1)] hover:shadow-[0_0_50px_rgba(212,175,55,0.2)]'
-                            : 'bg-zinc-900/50 border border-white/5 hover:bg-zinc-900'
+                        <div key={pkg.id} className={`flex flex-col relative group transition-all duration-300 rounded-[32px] p-8 backdrop-blur-2xl ${pkg.isPopular
+                            ? 'bg-black border border-primary/30 shadow-[0_8px_32px_rgba(212,175,55,0.12)] hover:shadow-[0_12px_48px_rgba(212,175,55,0.18)]'
+                            : 'bg-zinc-900/60 border border-white/5 hover:bg-zinc-900/80'
                             }`}>
                             {pkg.isPopular && (
-                                <div className="absolute top-0 right-0 bg-primary text-black text-[10px] font-bold px-4 py-1.5 rounded-bl-xl tracking-wider">PREMIUM</div>
+                                <div className="absolute top-6 right-6 bg-primary text-black px-3 py-1 rounded-full text-xs font-bold tracking-wide z-10 shadow-sm">
+                                    POPULAR
+                                </div>
                             )}
 
                             <div className="mb-8">
@@ -40,8 +42,10 @@ export default async function PackagesPage() {
                                 <ul className="space-y-3">
                                     {pkg.features?.map((item: string, i: number) => (
                                         <li key={i} className={`flex items-start text-sm ${pkg.isPopular ? 'text-white' : 'text-gray-300'}`}>
-                                            <Check className={`w-5 h-5 mr-3 shrink-0 ${pkg.isPopular ? 'text-primary' : 'text-gray-500'}`} />
-                                            <span>{item}</span>
+                                            <div className={`p-0.5 rounded-full mr-3 shrink-0 mt-0.5 ${pkg.isPopular ? 'bg-primary/20 text-primary' : 'bg-white/10 text-gray-400'}`}>
+                                                <Check className="w-4 h-4" />
+                                            </div>
+                                            <span className="leading-relaxed">{item}</span>
                                         </li>
                                     ))}
                                 </ul>
@@ -67,9 +71,9 @@ export default async function PackagesPage() {
                                     <p className="text-[10px] text-gray-500 mt-1">Final price confirmed after flight ticketing.</p>
                                 </div>
                                 <Link href={`/plan-a-trip?package=${pkg.title.toLowerCase().replace(' umrah', '').replace(' ', '-')}`}>
-                                    <Button className={`w-full rounded-full transition-all ${pkg.isPopular
-                                        ? 'shadow-[0_0_20px_rgba(212,175,55,0.3)] hover:shadow-[0_0_30px_rgba(212,175,55,0.5)]'
-                                        : 'border border-white/10 text-white hover:bg-white hover:text-black'
+                                    <Button className={`w-full h-12 rounded-full font-semibold transition-all duration-300 ${pkg.isPopular
+                                        ? 'shadow-[0_4px_14px_rgba(212,175,55,0.2)] hover:shadow-[0_6px_20px_rgba(212,175,55,0.3)] hover:scale-[1.02]'
+                                        : 'border border-white/10 text-white hover:bg-white hover:text-black hover:scale-[1.02]'
                                         }`} variant={pkg.isPopular ? 'primary' : 'ghost'}>
                                         Select {pkg.title.replace(' Umrah', '')}
                                     </Button>

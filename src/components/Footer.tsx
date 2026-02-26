@@ -1,9 +1,18 @@
+"use client"
+
 import Link from "next/link"
 import { Facebook, Instagram, Twitter, Mail, Phone } from "lucide-react"
+import { motion } from "framer-motion"
 
 export function Footer() {
     return (
-        <footer className="bg-black border-t border-white/10 pt-16 pb-8">
+        <motion.footer
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, type: "spring", bounce: 0.4 }}
+            viewport={{ once: true, margin: "-50px" }}
+            className="bg-black/40 border-t border-white/5 backdrop-blur-3xl pt-20 pb-8 mt-20"
+        >
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-12">
                     {/* Brand */}
@@ -70,6 +79,6 @@ export function Footer() {
                     </div>
                 </div>
             </div>
-        </footer>
+        </motion.footer>
     )
 }

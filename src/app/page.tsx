@@ -39,12 +39,12 @@ export default function Home() {
 
         <div className="relative z-10 text-center px-4 max-w-5xl mx-auto space-y-8">
           <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8 }}
+            initial={{ opacity: 0, scale: 0.95, filter: "blur(10px)" }}
+            animate={{ opacity: 1, scale: 1, filter: "blur(0px)" }}
+            transition={{ type: "spring", damping: 20, stiffness: 100 }}
           >
-            <div className="inline-block mb-4 px-4 py-1.5 rounded-full bg-white/5 border border-white/10 backdrop-blur-md">
-              <span className="text-primary text-sm font-medium tracking-widest uppercase">Najm Guides</span>
+            <div className="inline-block mb-4 px-4 py-1.5 rounded-full liquid-glass-input text-xs font-bold tracking-widest uppercase">
+              <span className="text-primary">Najm Guides</span>
             </div>
             <h1 className="text-4xl md:text-7xl lg:text-8xl font-bold tracking-tighter text-white mb-6">
               <TypewriterEffect text="Umrah Made Simple." className="gold-gradient-text" />
@@ -115,14 +115,14 @@ export default function Home() {
             ].map((item, index) => (
               <motion.div
                 key={index}
-                className="bg-zinc-900/50 backdrop-blur-sm border border-white/5 p-8 rounded-[2.5rem] text-center group hover:-translate-y-2 hover:bg-zinc-900 transition-all duration-500"
+                className="liquid-glass-dark p-8 squircle text-center group hover:scale-[1.02] transition-transform duration-500"
                 variants={fadeInUp}
               >
-                <div className="w-20 h-20 bg-black rounded-full flex items-center justify-center mx-auto mb-8 group-hover:scale-110 transition-transform border border-white/5 shadow-lg">
-                  <item.icon className="w-8 h-8 text-primary" />
+                <div className="w-16 h-16 liquid-glass rounded-full flex items-center justify-center mx-auto mb-6 group-hover:bg-primary/10 transition-colors">
+                  <item.icon className="w-6 h-6 text-primary" />
                 </div>
-                <h3 className="text-2xl font-bold text-white mb-3">{item.title}</h3>
-                <p className="text-gray-400 leading-relaxed">{item.desc}</p>
+                <h3 className="text-xl font-bold text-white mb-2">{item.title}</h3>
+                <p className="text-gray-400 text-sm leading-relaxed">{item.desc}</p>
               </motion.div>
             ))}
           </motion.div>
@@ -145,42 +145,46 @@ export default function Home() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-6xl mx-auto">
             <motion.div
-              className="relative group overflow-hidden rounded-[3rem] h-[500px]"
+              className="relative group overflow-hidden squircle h-[500px] border border-white/5 shadow-2xl"
               initial={{ opacity: 0, x: -50 }}
               whileInView={{ opacity: 1, x: 0 }}
               viewport={{ once: true }}
-              transition={{ duration: 0.6 }}
+              transition={{ type: "spring", damping: 20 }}
             >
-              <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1591604129939-f1efa4d9f7fa?q=80&w=1000&auto=format&fit=crop')] bg-cover bg-center transition-transform duration-1000 group-hover:scale-110" />
-              <div className="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-transparent opacity-90 group-hover:opacity-80 transition-opacity duration-500" />
-              <div className="absolute inset-0 flex flex-col justify-end p-12">
-                <h3 className="text-4xl font-bold text-white mb-4">Custom Trip</h3>
-                <p className="text-gray-300 mb-8 text-lg max-w-md">You choose the dates. We build the itinerary around you.</p>
-                <Link href="/plan-a-trip">
-                  <Button className="w-full rounded-full py-6 text-lg group-hover:bg-white group-hover:text-black transition-all">
-                    Plan My Dates <ArrowRight className="ml-2 w-5 h-5" />
-                  </Button>
-                </Link>
+              <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1591604129939-f1efa4d9f7fa?q=80&w=1000&auto=format&fit=crop')] bg-cover bg-center transition-transform duration-1000 group-hover:scale-105" />
+              <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent opacity-90 transition-opacity duration-500" />
+              <div className="absolute inset-0 flex flex-col justify-end p-8 md:p-12">
+                <div className="liquid-glass p-8 squircle">
+                  <h3 className="text-3xl font-bold text-white mb-3 tracking-tight">Custom Trip</h3>
+                  <p className="text-gray-300 mb-6 text-sm md:text-base max-w-md">You choose the dates. We build the itinerary around you.</p>
+                  <Link href="/plan-a-trip">
+                    <Button className="w-full rounded-full h-12 font-semibold shadow-lg transition-transform hover:scale-[1.02]">
+                      Plan My Dates <ArrowRight className="ml-2 w-4 h-4" />
+                    </Button>
+                  </Link>
+                </div>
               </div>
             </motion.div>
 
             <motion.div
-              className="relative group overflow-hidden rounded-[3rem] h-[500px]"
+              className="relative group overflow-hidden squircle h-[500px] border border-white/5 shadow-2xl"
               initial={{ opacity: 0, x: 50 }}
               whileInView={{ opacity: 1, x: 0 }}
               viewport={{ once: true }}
-              transition={{ duration: 0.6 }}
+              transition={{ type: "spring", damping: 20 }}
             >
-              <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1537181534458-15c006dfbd4a?q=80&w=1000&auto=format&fit=crop')] bg-cover bg-center transition-transform duration-1000 group-hover:scale-110" />
-              <div className="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-transparent opacity-90 group-hover:opacity-80 transition-opacity duration-500" />
-              <div className="absolute inset-0 flex flex-col justify-end p-12">
-                <h3 className="text-4xl font-bold text-white mb-4">Planned Trips</h3>
-                <p className="text-gray-300 mb-8 text-lg max-w-md">Join a group led by our experienced guides on fixed dates.</p>
-                <Link href="/planned-trips">
-                  <Button variant="outline" className="w-full rounded-full py-6 text-lg bg-white/10 border-white/20 text-white hover:bg-white hover:text-black transition-all backdrop-blur-md">
-                    View Upcoming Trips <ArrowRight className="ml-2 w-5 h-5" />
-                  </Button>
-                </Link>
+              <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1537181534458-15c006dfbd4a?q=80&w=1000&auto=format&fit=crop')] bg-cover bg-center transition-transform duration-1000 group-hover:scale-105" />
+              <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent opacity-90 transition-opacity duration-500" />
+              <div className="absolute inset-0 flex flex-col justify-end p-8 md:p-12">
+                <div className="liquid-glass p-8 squircle">
+                  <h3 className="text-3xl font-bold text-white mb-3 tracking-tight">Planned Trips</h3>
+                  <p className="text-gray-300 mb-6 text-sm md:text-base max-w-md">Join a group led by our experienced guides on fixed dates.</p>
+                  <Link href="/planned-trips">
+                    <Button variant="outline" className="w-full rounded-full h-12 font-semibold liquid-glass hover:bg-white hover:text-black transition-transform hover:scale-[1.02] border-white/10">
+                      View Upcoming Trips <ArrowRight className="ml-2 w-4 h-4" />
+                    </Button>
+                  </Link>
+                </div>
               </div>
             </motion.div>
           </div>
@@ -207,29 +211,28 @@ export default function Home() {
             viewport={{ once: true }}
             variants={staggerContainer}
           >
-            <motion.div variants={fadeInUp} className="bg-zinc-900/30 border border-white/5 p-10 rounded-[3rem] hover:bg-zinc-900/50 transition-colors">
+            <motion.div variants={fadeInUp} className="liquid-glass p-10 squircle hover:scale-[1.02] transition-transform duration-500">
               <h3 className="text-3xl font-bold text-white mb-6">Budget</h3>
               <ul className="space-y-4 text-gray-400 mb-10">
-                <li className="flex items-center"><CheckIcon className="w-6 h-6 text-gray-600 mr-3" /> 3-4 Star Hotels</li>
-                <li className="flex items-center"><CheckIcon className="w-6 h-6 text-gray-600 mr-3" /> 10-15 min walk to Haram</li>
-                <li className="flex items-center"><CheckIcon className="w-6 h-6 text-gray-600 mr-3" /> Shared Transport</li>
+                <li className="flex items-center"><div className="p-0.5 rounded-full mr-3 shrink-0 bg-white/10"><CheckIcon className="w-4 h-4 text-gray-400" /></div> 3-4 Star Hotels</li>
+                <li className="flex items-center"><div className="p-0.5 rounded-full mr-3 shrink-0 bg-white/10"><CheckIcon className="w-4 h-4 text-gray-400" /></div> 10-15 min walk to Haram</li>
+                <li className="flex items-center"><div className="p-0.5 rounded-full mr-3 shrink-0 bg-white/10"><CheckIcon className="w-4 h-4 text-gray-400" /></div> Shared Transport</li>
               </ul>
               <Link href="/packages">
-                <Button variant="outline" className="w-full rounded-full py-6 border-white/10 hover:bg-white hover:text-black">View Details</Button>
+                <Button variant="outline" className="w-full rounded-full h-12 font-semibold border-white/10 hover:bg-white hover:text-black hover:scale-105 transition-transform">View Details</Button>
               </Link>
             </motion.div>
 
-            <motion.div variants={fadeInUp} className="bg-zinc-900 border border-primary/20 p-10 rounded-[3rem] relative overflow-hidden group">
-              <div className="absolute top-0 right-0 bg-primary text-black text-xs font-bold px-6 py-2 rounded-bl-2xl">POPULAR</div>
-              <div className="absolute inset-0 bg-primary/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+            <motion.div variants={fadeInUp} className="liquid-glass-gold p-10 squircle relative overflow-hidden group hover:scale-[1.02] transition-transform duration-500">
+              <div className="absolute top-6 right-6 bg-primary text-black text-[10px] font-bold px-3 py-1 rounded-full tracking-wider shadow-sm z-10">POPULAR</div>
               <h3 className="text-3xl font-bold text-white mb-6 gold-gradient-text">Luxury</h3>
               <ul className="space-y-4 text-gray-400 mb-10 relative z-10">
-                <li className="flex items-center"><CheckIcon className="w-6 h-6 text-primary mr-3" /> 5 Star Hotels</li>
-                <li className="flex items-center"><CheckIcon className="w-6 h-6 text-primary mr-3" /> Steps away from Haram</li>
-                <li className="flex items-center"><CheckIcon className="w-6 h-6 text-primary mr-3" /> Private Luxury Transport</li>
+                <li className="flex items-center"><div className="p-0.5 rounded-full mr-3 shrink-0 bg-primary/20"><CheckIcon className="w-4 h-4 text-primary" /></div> <span className="text-gray-200">5 Star Hotels</span></li>
+                <li className="flex items-center"><div className="p-0.5 rounded-full mr-3 shrink-0 bg-primary/20"><CheckIcon className="w-4 h-4 text-primary" /></div> <span className="text-gray-200">Steps away from Haram</span></li>
+                <li className="flex items-center"><div className="p-0.5 rounded-full mr-3 shrink-0 bg-primary/20"><CheckIcon className="w-4 h-4 text-primary" /></div> <span className="text-gray-200">Private Luxury Transport</span></li>
               </ul>
               <Link href="/packages">
-                <Button className="w-full rounded-full py-6 shadow-[0_0_20px_rgba(212,175,55,0.2)] group-hover:shadow-[0_0_30px_rgba(212,175,55,0.4)] transition-all relative z-10">View Details</Button>
+                <Button className="w-full rounded-full h-12 font-semibold shadow-[0_4px_14px_rgba(212,175,55,0.2)] group-hover:shadow-[0_6px_20px_rgba(212,175,55,0.3)] transition-all relative z-10">View Details</Button>
               </Link>
             </motion.div>
           </motion.div>

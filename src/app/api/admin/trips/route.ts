@@ -119,4 +119,4 @@ export async function DELETE(request: Request) {
         console.error('Error deleting trip:', error)
         return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 })
     }
-
+}

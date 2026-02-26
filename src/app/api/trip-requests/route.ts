@@ -41,7 +41,6 @@ export async function POST(request: Request) {
                 makkahDays: body.makkahDays || 5,
                 madinahDays: body.madinahDays || 5,
                 departureCountry: body.departureCountry || '',
-                departureCountry: body.departureCountry || '',
                 departureCity: body.nationality || '',
                 notes: body.notes || null,
                 startDateRange: body.startDate ? new Date(body.startDate).toISOString() : null,
