@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { Button } from "@/components/ui/Button"
-import { Plane, Hotel, FileCheck, UserCheck, ArrowRight, ShieldCheck, CreditCard, HeartHandshake } from "lucide-react"
+import { Headset, Hotel, FileCheck, UserCheck, ArrowRight, ShieldCheck, CreditCard, HeartHandshake } from "lucide-react"
 import { TypewriterEffect } from "@/components/ui/TypewriterEffect"
 import { motion, useScroll, useTransform } from "framer-motion"
 
@@ -108,7 +108,7 @@ export default function Home() {
             variants={staggerContainer}
           >
             {[
-              { icon: Plane, title: "Flights", desc: "Best routes from US" },
+              { icon: Headset, title: "24/7 Support", desc: "Always available assistance" },
               { icon: Hotel, title: "Hotels", desc: "Luxury & proximity" },
               { icon: FileCheck, title: "Visa", desc: "Hassle-free processing" },
               { icon: UserCheck, title: "Guidance", desc: "Expert on-ground support" },
@@ -171,7 +171,7 @@ export default function Home() {
               viewport={{ once: true }}
               transition={{ duration: 0.6 }}
             >
-              <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1537181534458-15c006dfbd4a?q=80&w=1000&auto=format&fit=crop')] bg-cover bg-center transition-transform duration-1000 group-hover:scale-110" />
+              <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1565552645632-d725f8bfc19a?q=80&w=1000&auto=format&fit=crop')] bg-cover bg-center transition-transform duration-1000 group-hover:scale-110" />
               <div className="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-transparent opacity-90 group-hover:opacity-80 transition-opacity duration-500" />
               <div className="absolute inset-0 flex flex-col justify-end p-12">
                 <h3 className="text-4xl font-bold text-white mb-4">Planned Trips</h3>
